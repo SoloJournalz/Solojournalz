@@ -250,7 +250,7 @@ export default function StoragePage() {
   ];
 
   if (loading) {
-    return <PageLoading />;
+    return <PageLoading label="Loading Storage" workspace />;
   }
 
   return (

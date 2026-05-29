@@ -609,7 +609,7 @@ export default function TradeLogPage() {
   };
 
   if (loading) {
-    return <PageLoading />;
+    return <PageLoading label="Loading Trade Log" workspace />;
   }
 
   return (

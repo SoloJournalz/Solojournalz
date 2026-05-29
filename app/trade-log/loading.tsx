@@ -1,5 +1,5 @@
 import PageLoading from "@/app/components/layout/page-loading";
 
 export default function Loading() {
-  return <PageLoading />;
+  return <PageLoading label="Loading Trade Log" workspace />;
 }

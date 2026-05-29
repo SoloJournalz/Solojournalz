@@ -97,7 +97,7 @@ export default function StorageTradeList({
         <div className="h-48 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-3">
           {loading ? (
             <div className="flex h-full items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
-              Loading trades...
+              Loading trades
             </div>
           ) : trades.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">

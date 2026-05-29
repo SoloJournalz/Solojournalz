@@ -45,6 +45,14 @@ type UsagePreview = {
   cycleEnd: string;
 };
 
+type BillingDetails = {
+  subscription_status: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean | null;
+  stripe_customer_id: string | null;
+};
+
 type SampleTradeTemplate = {
   pair: string;
   strategy: string;
@@ -339,6 +347,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [planUpdating, setPlanUpdating] = useState(false);
   const [usagePreview, setUsagePreview] = useState<UsagePreview | null>(null);
+  const [billingDetails, setBillingDetails] = useState<BillingDetails | null>(null);
   const [devBillingCycleStart, setDevBillingCycleStart] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -415,7 +424,7 @@ export default function SettingsPage() {
 
     const { data: planData, error: planError } = await supabase
       .from("user_plans")
-      .select("plan")
+      .select("plan, subscription_status, current_period_start, current_period_end, cancel_at_period_end, stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -432,6 +441,13 @@ export default function SettingsPage() {
 
     const resolvedPlan = resolvePlan(planData.plan);
     setCurrentPlan(resolvedPlan);
+    setBillingDetails({
+      subscription_status: planData.subscription_status,
+      current_period_start: planData.current_period_start,
+      current_period_end: planData.current_period_end,
+      cancel_at_period_end: planData.cancel_at_period_end,
+      stripe_customer_id: planData.stripe_customer_id,
+    });
     setDevBillingCycleStart(getStoredDevBillingCycleStart() || "");
 
     try {
@@ -717,7 +733,7 @@ export default function SettingsPage() {
   const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
 
   if (loading) {
-    return <PageLoading />;
+    return <PageLoading label="Loading Settings" workspace />;
   }
 
   return (
@@ -757,7 +773,7 @@ export default function SettingsPage() {
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <div className="space-y-4">
-            <PlanSettings currentPlan={currentPlan} />
+            <PlanSettings currentPlan={currentPlan} billingDetails={billingDetails} />
 
             {PLANS[currentPlan].psychologyTracking ? (
               <SettingsList

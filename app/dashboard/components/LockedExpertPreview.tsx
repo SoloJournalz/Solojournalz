@@ -10,7 +10,7 @@ export default function LockedExpertPreview() {
       </p>
 
       <Link
-        href="/get-started"
+        href="/settings"
         className="mt-6 inline-flex rounded-2xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:opacity-90"
       >
         Upgrade to Expert
