@@ -48,12 +48,12 @@ export default async function HomePage({
               </div>
             )}
 
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#b8860b] sm:text-sm">
-              Coming Soon
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-[#b8860b] sm:text-sm">
+              SoloJournalz
             </p>
 
-            <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              SoloJournalz is coming soon.
+            <h1 className="mt-6 max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              SoloJournalz
             </h1>
 
             <p className="mt-7 max-w-2xl text-base leading-8 text-[#5f6673] sm:text-lg lg:text-xl">
