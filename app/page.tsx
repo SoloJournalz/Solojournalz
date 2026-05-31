@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import PublicNavbar from "@/app/components/layout/public-navbar";
 import PublicFooter from "@/app/components/layout/public-footer";
 import FeatureCard from "@/app/components/public/feature-card";
@@ -18,7 +19,19 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ code?: string | string[]; next?: string | string[] }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
+  const code = Array.isArray(params?.code) ? params?.code[0] : params?.code;
+
+  // Safety net for OAuth providers that return the code to / instead of /auth/callback.
+  // This preserves the session exchange route and prevents users landing on the homepage after Google sign-in.
+  if (code) {
+    redirect(`/auth/callback?code=${encodeURIComponent(code)}&next=/dashboard`);
+  }
   if (process.env.NEXT_PUBLIC_SITE_MODE === "waitlist") {
     // proxy redirects public homepage traffic to /waitlist in waitlist mode.
     // This keeps the original homepage ready for live mode.

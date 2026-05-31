@@ -39,7 +39,7 @@ export default function LoginPage() {
   }, [router]);
 
   const signInWithGoogle = async () => {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const siteUrl = window.location.origin;
 
     await supabase.auth.signInWithOAuth({
       provider: "google",
