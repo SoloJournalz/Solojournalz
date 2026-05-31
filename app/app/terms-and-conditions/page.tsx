@@ -1,5 +1,6 @@
 import PublicNavbar from "@/app/components/layout/public-navbar";
 import PublicFooter from "@/app/components/layout/public-footer";
+import PublicHero from "@/app/components/public/public-hero";
 
 const sections = [
   {
@@ -12,7 +13,7 @@ const sections = [
   },
   {
     title: "3. Account access",
-    text: "SoloJournalz currently uses Google sign-in. During private development or coming soon mode, workspace access may be limited to approved admin accounts.",
+    text: "SoloJournalz currently uses Google sign-in. Workspace access may be limited while the product is in private development.",
   },
   {
     title: "4. Subscriptions and billing",
@@ -37,20 +38,14 @@ export default function TermsAndConditionsPage() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <PublicNavbar />
 
-      <section className="mx-auto max-w-4xl px-6 pb-24 pt-20 md:px-10">
-        <p className="text-sm font-black uppercase tracking-[0.2em] text-[var(--gold)]">
-          Legal
-        </p>
+      <PublicHero
+        label="Terms"
+        title="Terms of Service"
+        description="These simple pre-launch terms govern use of SoloJournalz and related services."
+      />
 
-        <h1 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">
-          Terms of Service
-        </h1>
-
-        <p className="mt-6 leading-8 text-[var(--text-secondary)]">
-          These simple pre-launch terms govern use of SoloJournalz and related services.
-        </p>
-
-        <div className="mt-12 space-y-8">
+      <section className="mx-auto max-w-4xl px-6 pb-24 md:px-10">
+        <div className="space-y-8">
           {sections.map((section) => (
             <section key={section.title} className="rounded-[1.5rem] border border-[var(--border)] bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-black">{section.title}</h2>

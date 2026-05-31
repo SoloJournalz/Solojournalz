@@ -76,10 +76,6 @@ export async function proxy(request: NextRequest) {
 
   const isAdmin = isAdminUser(user?.email);
 
-  if (waitlistMode && pathname === "/") {
-    return redirect(request, "/coming-soon");
-  }
-
   if (waitlistMode && !isAdmin) {
     const allowedPublicRoute = isRouteMatch(pathname, WAITLIST_ALLOWED_PUBLIC_ROUTES);
 

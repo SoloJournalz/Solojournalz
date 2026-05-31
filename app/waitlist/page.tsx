@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function WaitlistPage() {
+export default function WaitlistRedirectPage() {
   redirect("/coming-soon");
 }

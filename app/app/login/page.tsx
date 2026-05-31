@@ -62,11 +62,8 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-[var(--gold)]">
-              Secure access
-            </p>
-            <p className="mt-4 text-sm leading-7 text-[var(--text-secondary)]">
-              SoloJournalz currently uses Google sign-in for secure access.
+            <p className="text-sm leading-7 text-[var(--text-secondary)]">
+              SoloJournalz currently uses Google sign-in for secure account access.
             </p>
           </div>
 
