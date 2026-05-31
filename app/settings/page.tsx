@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/app/components/layout/navbar";
 import PageLoading from "@/app/components/layout/page-loading";
@@ -17,7 +17,7 @@ import {
   updateUserPlan,
 } from "@/lib/usage";
 
-const ADMIN_EMAIL = "maem.soliman@gmail.com";
+const ADMIN_EMAIL = "m.soliman.business@gmail.com";
 
 type UserTradeSettings = {
   id?: string;
@@ -336,7 +336,7 @@ const buildSampleTrades = (
   });
 };
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSetupMode = searchParams.get("setup") === "true";
@@ -910,5 +910,14 @@ export default function SettingsPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<PageLoading label="Loading Settings" workspace />}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }

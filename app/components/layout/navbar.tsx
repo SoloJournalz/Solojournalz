@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/app/components/layout/logo";
@@ -25,7 +25,7 @@ function WorkspaceTransitionLoader({ label }: { label: string }) {
   );
 }
 
-export default function Navbar({
+function NavbarInner({
   hasUnsavedChanges = false,
 }: {
   hasUnsavedChanges?: boolean;
@@ -136,5 +136,18 @@ export default function Navbar({
         />
       ) : null}
     </>
+  );
+}
+
+
+export default function Navbar({
+  hasUnsavedChanges = false,
+}: {
+  hasUnsavedChanges?: boolean;
+}) {
+  return (
+    <Suspense fallback={null}>
+      <NavbarInner hasUnsavedChanges={hasUnsavedChanges} />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/app/components/layout/navbar";
 import PageLoading from "@/app/components/layout/page-loading";
@@ -98,7 +98,7 @@ const createInitialForm = (
     : [],
 });
 
-export default function TradeLogPage() {
+function TradeLogPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -674,5 +674,13 @@ export default function TradeLogPage() {
         />
       </section>
     </main>
+  );
+}
+
+export default function TradeLogPage() {
+  return (
+    <Suspense fallback={<PageLoading label="Loading Trade Log" workspace />}>
+      <TradeLogPageContent />
+    </Suspense>
   );
 }
