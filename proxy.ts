@@ -17,8 +17,10 @@ const WAITLIST_ALLOWED_PUBLIC_ROUTES = [
   "/about",
   "/contact",
   "/pricing",
+  "/prices",
   "/privacy-policy",
   "/terms-and-conditions",
+  "/terms",
 ];
 
 const isRouteMatch = (pathname: string, routes: string[]) =>

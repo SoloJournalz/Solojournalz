@@ -51,7 +51,7 @@ export default function PricingPage() {
 
             <p className="mt-6 text-lg leading-8 text-[#6b7280]">
               Start with the essentials or unlock the full performance
-              intelligence layer with Expert.
+              intelligence layer with Expert. Pricing and features may change before launch.
             </p>
           </div>
 
