@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { isAdminUser } from "@/lib/admin";
+import { isWaitlistMode } from "@/lib/site-mode";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -43,6 +45,11 @@ export async function GET(request: Request) {
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", requestUrl.origin));
+  }
+
+  if (isWaitlistMode() && !isAdminUser(user.email)) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(new URL("/coming-soon", requestUrl.origin));
   }
 
   const { data: planRow } = await supabase

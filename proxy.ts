@@ -5,9 +5,11 @@ import { isPhoneUserAgent } from "./lib/device";
 import { isWaitlistMode } from "./lib/site-mode";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/trade-log", "/storage", "/settings", "/select-plan"];
+const PHONE_BLOCKED_PREFIXES = ["/login", "/auth/callback", ...PROTECTED_PREFIXES];
 const AUTH_ROUTES = ["/login", "/select-plan"];
 const WAITLIST_ALLOWED_PUBLIC_ROUTES = [
   "/",
+  "/coming-soon",
   "/waitlist",
   "/unsupported-device",
   "/login",
@@ -23,6 +25,7 @@ const isRouteMatch = (pathname: string, routes: string[]) =>
   routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
 const isProtectedRoute = (pathname: string) => isRouteMatch(pathname, PROTECTED_PREFIXES);
+const isPhoneBlockedRoute = (pathname: string) => isRouteMatch(pathname, PHONE_BLOCKED_PREFIXES);
 const isAuthRoute = (pathname: string) => isRouteMatch(pathname, AUTH_ROUTES);
 
 function redirect(request: NextRequest, pathname: string) {
@@ -37,7 +40,7 @@ export async function proxy(request: NextRequest) {
   const waitlistMode = isWaitlistMode();
   const isPhone = isPhoneUserAgent(request.headers.get("user-agent"));
 
-  if (isPhone && isProtectedRoute(pathname)) {
+  if (isPhone && isPhoneBlockedRoute(pathname)) {
     return redirect(request, "/unsupported-device");
   }
 
@@ -72,18 +75,18 @@ export async function proxy(request: NextRequest) {
   const isAdmin = isAdminUser(user?.email);
 
   if (waitlistMode && pathname === "/") {
-    return redirect(request, "/waitlist");
+    return redirect(request, "/coming-soon");
   }
 
   if (waitlistMode && !isAdmin) {
     const allowedPublicRoute = isRouteMatch(pathname, WAITLIST_ALLOWED_PUBLIC_ROUTES);
 
     if (isProtectedRoute(pathname)) {
-      return redirect(request, "/waitlist");
+      return redirect(request, "/coming-soon");
     }
 
     if (!allowedPublicRoute && !pathname.startsWith("/api/waitlist")) {
-      return redirect(request, "/waitlist");
+      return redirect(request, "/coming-soon");
     }
   }
 
@@ -115,6 +118,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/stripe/webhook).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$|api/stripe/webhook).*)",
   ],
 };
