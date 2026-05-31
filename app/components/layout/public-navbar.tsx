@@ -61,13 +61,6 @@ export default function PublicNavbar() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="rounded-xl bg-[var(--accent)] px-4 py-3 font-black text-white transition hover:bg-[var(--accent-hover)]"
-            >
-              Sign In
-            </Link>
           </nav>
         </div>
       )}

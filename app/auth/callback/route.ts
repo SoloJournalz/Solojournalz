@@ -48,8 +48,7 @@ export async function GET(request: Request) {
   }
 
   if (isWaitlistMode() && !isAdminUser(user.email)) {
-    await supabase.auth.signOut();
-    return NextResponse.redirect(new URL("/coming-soon", requestUrl.origin));
+    return NextResponse.redirect(new URL("/coming-soon?joined=1", requestUrl.origin));
   }
 
   const { data: planRow } = await supabase
