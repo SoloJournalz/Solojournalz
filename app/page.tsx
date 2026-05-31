@@ -33,10 +33,11 @@ const previewPlans = [
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ code?: string | string[] }>;
+  searchParams?: Promise<{ code?: string | string[]; joined?: string | string[] }>;
 }) {
   const params = searchParams ? await searchParams : undefined;
   const code = Array.isArray(params?.code) ? params?.code[0] : params?.code;
+  const joined = Array.isArray(params?.joined) ? params?.joined[0] : params?.joined;
 
   if (code) {
     redirect(`/auth/callback?code=${encodeURIComponent(code)}&next=/dashboard`);
@@ -74,6 +75,17 @@ export default async function HomePage({
               </div>
             </PublicHero>
 
+            {joined ? (
+              <div className="mx-auto mb-10 max-w-3xl rounded-[1.5rem] border border-[var(--border)] bg-white px-6 py-5 text-center shadow-sm">
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                  Your account has been registered successfully.
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                  SoloJournalz is currently in private development. We will announce public access when the platform is ready.
+                </p>
+              </div>
+            ) : null}
+
             <div className="mx-auto grid max-w-6xl gap-4 px-6 pb-20 text-left sm:grid-cols-3 lg:px-10">
               {cards.map((card) => (
                 <article
@@ -107,15 +119,6 @@ export default async function HomePage({
                   <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">{plan.text}</p>
                 </article>
               ))}
-            </div>
-
-            <div className="mt-8 text-center">
-              <Link
-                href="/pricing"
-                className="inline-flex rounded-2xl border border-[var(--border)] bg-white px-6 py-3 text-sm font-semibold text-[var(--text-primary)] shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--accent)]/35 hover:shadow-lg"
-              >
-                View full pricing
-              </Link>
             </div>
           </div>
         </section>

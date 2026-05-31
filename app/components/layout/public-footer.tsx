@@ -5,12 +5,6 @@ const legalLinks = [
   { href: "/privacy-policy", label: "Privacy" },
 ];
 
-const socialLinks = [
-  { href: "https://www.linkedin.com", label: "LinkedIn" },
-  { href: "https://www.youtube.com", label: "YouTube" },
-  { href: "https://www.instagram.com", label: "Instagram" },
-  { href: "https://x.com", label: "X" },
-];
 
 export default function PublicFooter() {
   return (
@@ -31,20 +25,6 @@ export default function PublicFooter() {
             <Link key={link.href} href={link.href} className="hover:text-[var(--accent)]">
               {link.label}
             </Link>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-          {socialLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[var(--accent)]"
-            >
-              {link.label}
-            </a>
           ))}
         </div>
 

@@ -9,8 +9,6 @@ const PHONE_BLOCKED_PREFIXES = ["/login", "/auth/callback", ...PROTECTED_PREFIXE
 const AUTH_ROUTES = ["/login", "/select-plan"];
 const WAITLIST_ALLOWED_PUBLIC_ROUTES = [
   "/",
-  "/coming-soon",
-  "/waitlist",
   "/unsupported-device",
   "/login",
   "/auth/callback",
@@ -80,11 +78,11 @@ export async function proxy(request: NextRequest) {
     const allowedPublicRoute = isRouteMatch(pathname, WAITLIST_ALLOWED_PUBLIC_ROUTES);
 
     if (isProtectedRoute(pathname)) {
-      return redirect(request, "/coming-soon");
+      return redirect(request, "/");
     }
 
-    if (!allowedPublicRoute && !pathname.startsWith("/api/waitlist")) {
-      return redirect(request, "/coming-soon");
+    if (!allowedPublicRoute) {
+      return redirect(request, "/");
     }
   }
 
