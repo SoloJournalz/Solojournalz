@@ -1,4 +1,4 @@
-const DEFAULT_ADMIN_EMAILS = ["m.soliman.business@gmail.com"];
+const DEFAULT_ADMIN_EMAILS = ["m.soliman.business@gmail.com", "maem.soliman@gmail.com"];
 
 function getAdminEmails() {
   const raw = process.env.ADMIN_EMAILS;

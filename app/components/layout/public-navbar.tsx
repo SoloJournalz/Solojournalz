@@ -8,8 +8,6 @@ const links = [
 ];
 
 export default function PublicNavbar() {
-  const isWaitlistMode = process.env.NEXT_PUBLIC_SITE_MODE === "waitlist";
-
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-6 md:px-10">

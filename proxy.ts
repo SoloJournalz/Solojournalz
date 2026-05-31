@@ -12,6 +12,9 @@ const WAITLIST_ALLOWED_PUBLIC_ROUTES = [
   "/unsupported-device",
   "/login",
   "/auth/callback",
+  "/about",
+  "/contact",
+  "/pricing",
   "/privacy-policy",
   "/terms-and-conditions",
 ];
@@ -74,10 +77,6 @@ export async function proxy(request: NextRequest) {
 
   if (waitlistMode && !isAdmin) {
     const allowedPublicRoute = isRouteMatch(pathname, WAITLIST_ALLOWED_PUBLIC_ROUTES);
-
-    if (pathname === "/pricing" || pathname === "/about" || pathname === "/contact") {
-      return redirect(request, "/waitlist");
-    }
 
     if (isProtectedRoute(pathname)) {
       return redirect(request, "/waitlist");
