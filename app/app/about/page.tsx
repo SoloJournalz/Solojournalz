@@ -23,7 +23,7 @@ export default function AboutPage() {
       <PublicNavbar />
 
       <main className="min-h-screen bg-[#f7f7f5] text-black">
-        <section className="mx-auto max-w-5xl px-6 py-24 text-center">
+        <section className="mx-auto max-w-5xl px-6 pb-16 pt-24 text-center md:px-10">
           <p className="text-sm font-black uppercase tracking-[0.28em] text-[#b8860b]">
             About SoloJournalz
           </p>

@@ -41,7 +41,7 @@ export default async function HomePage({
           <div className="absolute left-1/2 top-12 h-[420px] w-[420px] max-w-[90vw] -translate-x-1/2 rounded-full bg-[#7f1010]/10 blur-3xl" />
           <div className="absolute right-[-120px] top-40 hidden h-[300px] w-[300px] rounded-full bg-[#d4af37]/10 blur-3xl md:block" />
 
-          <div className="relative mx-auto flex min-h-[calc(100vh-72px)] max-w-6xl flex-col items-center justify-center px-4 py-14 text-center sm:px-6 lg:px-10">
+          <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-16 pt-24 text-center sm:px-6 lg:px-10">
             {joined === "1" && (
               <div className="mb-6 max-w-2xl rounded-2xl border border-[#d4af37]/30 bg-white/80 px-5 py-3 text-sm font-medium leading-6 text-[#5f6673] shadow-sm">
                 You are signed in with SoloJournalz. The workspace is still in private development, so public access is paused until launch.

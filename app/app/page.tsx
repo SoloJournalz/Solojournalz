@@ -51,12 +51,12 @@ export default async function HomePage({
           <div className="absolute left-1/2 top-16 h-[420px] w-[420px] max-w-[90vw] -translate-x-1/2 rounded-full bg-[#7f1010]/10 blur-3xl" />
           <div className="absolute right-[-120px] top-48 hidden h-[300px] w-[300px] rounded-full bg-[#d4af37]/10 blur-3xl md:block" />
 
-          <div className="relative mx-auto flex min-h-[calc(100vh-72px)] max-w-5xl flex-col items-center justify-center px-6 py-20 text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#b8860b] sm:text-sm">
-              Trading journal
+          <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-16 pt-24 text-center sm:px-6 lg:px-10">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-[#b8860b] sm:text-sm">
+              Trading Journal
             </p>
 
-            <h1 className="mt-6 max-w-4xl text-5xl font-black leading-tight tracking-tight md:text-6xl">
+            <h1 className="mt-6 max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               Trading journal built for serious traders.
             </h1>
 
@@ -80,7 +80,7 @@ export default async function HomePage({
               </Link>
             </div>
 
-            <div className="mt-14 grid w-full gap-4 text-left sm:grid-cols-3">
+            <div className="mt-12 grid w-full gap-4 text-left sm:grid-cols-3">
               {cards.map((card) => (
                 <article
                   key={card.title}
@@ -98,10 +98,10 @@ export default async function HomePage({
         <section className="border-b border-black/10 px-4 py-16 sm:px-6 lg:px-10">
           <div className="mx-auto max-w-6xl">
             <div className="max-w-2xl">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#b8860b]">
-                Simple plans
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-[#b8860b]">
+                Simple Plans
               </p>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
                 Start simple. Upgrade when you need deeper review.
               </h2>
             </div>
@@ -109,7 +109,7 @@ export default async function HomePage({
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               {previewPlans.map((plan) => (
                 <article key={plan.name} className="rounded-[1.5rem] border border-black/10 bg-white p-6 shadow-sm">
-                  <h3 className="text-2xl font-semibold">{plan.name}</h3>
+                  <h3 className="text-2xl font-black">{plan.name}</h3>
                   <p className="mt-3 text-sm leading-7 text-[#6b7280]">{plan.text}</p>
                 </article>
               ))}

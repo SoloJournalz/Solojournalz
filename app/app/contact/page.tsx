@@ -6,12 +6,12 @@ export default function ContactPage() {
     <main className="min-h-screen bg-[#f7f7f5] text-black">
       <PublicNavbar />
 
-      <section className="mx-auto max-w-5xl px-6 pb-16 pt-20 text-center md:px-10">
+      <section className="mx-auto max-w-5xl px-6 pb-16 pt-24 text-center md:px-10">
         <p className="text-sm font-black uppercase tracking-[0.25em] text-[#b8860b]">
           Contact
         </p>
 
-        <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-black tracking-tight md:text-5xl">
+        <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight md:text-5xl">
           Questions, feedback, or feature ideas?
         </h1>
 

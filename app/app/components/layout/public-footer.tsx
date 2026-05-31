@@ -15,9 +15,6 @@ export default function PublicFooter() {
         </div>
 
         <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-[var(--text-secondary)]">
-          <Link href="/about" className="hover:text-[var(--accent)]">About</Link>
-          <Link href="/contact" className="hover:text-[var(--accent)]">Contact</Link>
-          <Link href="/pricing" className="hover:text-[var(--accent)]">Prices</Link>
           <Link href="/terms" className="hover:text-[var(--accent)]">Terms</Link>
           <Link href="/privacy-policy" className="hover:text-[var(--accent)]">Privacy</Link>
         </div>

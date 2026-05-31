@@ -38,14 +38,14 @@ export default function PricingPage() {
     <>
       <PublicNavbar />
 
-      <main className="min-h-screen bg-[#f7f7f5] px-6 py-20 text-black">
+      <main className="min-h-screen bg-[#f7f7f5] px-6 pb-20 pt-24 text-black">
         <section className="mx-auto max-w-5xl">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-black uppercase tracking-[0.25em] text-[#b8860b]">
               Prices
             </p>
 
-            <h1 className="mt-5 text-5xl font-black tracking-tight md:text-6xl">
+            <h1 className="mt-6 text-5xl font-black leading-tight tracking-tight md:text-6xl">
               Simple pricing for disciplined traders.
             </h1>
 
