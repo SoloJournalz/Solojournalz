@@ -1,21 +1,42 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminUser } from "./lib/admin";
+import { isPhoneUserAgent } from "./lib/device";
+import { isWaitlistMode } from "./lib/site-mode";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/trade-log", "/storage", "/settings"];
+const PROTECTED_PREFIXES = ["/dashboard", "/trade-log", "/storage", "/settings", "/select-plan"];
 const AUTH_ROUTES = ["/login", "/select-plan"];
+const WAITLIST_ALLOWED_PUBLIC_ROUTES = [
+  "/",
+  "/waitlist",
+  "/unsupported-device",
+  "/login",
+  "/auth/callback",
+  "/privacy-policy",
+  "/terms-and-conditions",
+];
 
-const isProtectedRoute = (pathname: string) =>
-  PROTECTED_PREFIXES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+const isRouteMatch = (pathname: string, routes: string[]) =>
+  routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
-const isAuthRoute = (pathname: string) =>
-  AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+const isProtectedRoute = (pathname: string) => isRouteMatch(pathname, PROTECTED_PREFIXES);
+const isAuthRoute = (pathname: string) => isRouteMatch(pathname, AUTH_ROUTES);
+
+function redirect(request: NextRequest, pathname: string) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = pathname;
+  redirectUrl.search = "";
+  return NextResponse.redirect(redirectUrl);
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const waitlistMode = isWaitlistMode();
+  const isPhone = isPhoneUserAgent(request.headers.get("user-agent"));
+
+  if (isPhone && isProtectedRoute(pathname)) {
+    return redirect(request, "/unsupported-device");
+  }
 
   let response = NextResponse.next({ request });
 
@@ -45,6 +66,28 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const isAdmin = isAdminUser(user?.email);
+
+  if (waitlistMode && pathname === "/") {
+    return redirect(request, "/waitlist");
+  }
+
+  if (waitlistMode && !isAdmin) {
+    const allowedPublicRoute = isRouteMatch(pathname, WAITLIST_ALLOWED_PUBLIC_ROUTES);
+
+    if (pathname === "/pricing" || pathname === "/about" || pathname === "/contact") {
+      return redirect(request, "/waitlist");
+    }
+
+    if (isProtectedRoute(pathname)) {
+      return redirect(request, "/waitlist");
+    }
+
+    if (!allowedPublicRoute && !pathname.startsWith("/api/waitlist")) {
+      return redirect(request, "/waitlist");
+    }
+  }
+
   if (isProtectedRoute(pathname) && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
@@ -60,18 +103,12 @@ export async function proxy(request: NextRequest) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (isProtectedRoute(pathname) && !planRow) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/select-plan";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+  if (isProtectedRoute(pathname) && pathname !== "/select-plan" && !planRow) {
+    return redirect(request, "/select-plan");
   }
 
   if (isAuthRoute(pathname) && planRow) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+    return redirect(request, "/dashboard");
   }
 
   return response;

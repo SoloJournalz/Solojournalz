@@ -8,6 +8,8 @@ const links = [
 ];
 
 export default function PublicNavbar() {
+  const isWaitlistMode = process.env.NEXT_PUBLIC_SITE_MODE === "waitlist";
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-6 md:px-10">
@@ -24,12 +26,14 @@ export default function PublicNavbar() {
             </Link>
           ))}
 
-          <Link
-            href="/login"
-            className="rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 font-medium text-[var(--text-primary)] shadow-sm transition hover:bg-black/[0.03] md:px-5"
-          >
-            Sign in
-          </Link>
+          {!isWaitlistMode ? (
+            <Link
+              href="/login"
+              className="rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 font-medium text-[var(--text-primary)] shadow-sm transition hover:bg-black/[0.03] md:px-5"
+            >
+              Sign in
+            </Link>
+          ) : null}
         </nav>
       </div>
     </header>

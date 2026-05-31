@@ -19,6 +19,11 @@ const features = [
 ];
 
 export default function HomePage() {
+  if (process.env.NEXT_PUBLIC_SITE_MODE === "waitlist") {
+    // proxy redirects public homepage traffic to /waitlist in waitlist mode.
+    // This keeps the original homepage ready for live mode.
+  }
+
   return (
     <>
       <PublicNavbar />
