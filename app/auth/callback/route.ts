@@ -5,9 +5,10 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const next = requestUrl.searchParams.get("next") || "/dashboard";
 
   if (!code) {
-    return NextResponse.redirect(`${requestUrl.origin}/login`);
+    return NextResponse.redirect(new URL("/login", requestUrl.origin));
   }
 
   const cookieStore = await cookies();
@@ -33,13 +34,15 @@ export async function GET(request: Request) {
   const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (sessionError) {
-    return NextResponse.redirect(`${requestUrl.origin}/login`);
+    return NextResponse.redirect(new URL("/login", requestUrl.origin));
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(`${requestUrl.origin}/login`);
+    return NextResponse.redirect(new URL("/login", requestUrl.origin));
   }
 
   const { data: planRow } = await supabase
@@ -49,8 +52,8 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   if (!planRow) {
-    return NextResponse.redirect(`${requestUrl.origin}/select-plan`);
+    return NextResponse.redirect(new URL("/select-plan", requestUrl.origin));
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
+  return NextResponse.redirect(new URL(next, requestUrl.origin));
 }
