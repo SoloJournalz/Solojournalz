@@ -24,14 +24,12 @@ export default function PublicNavbar() {
             </Link>
           ))}
 
-          {!isWaitlistMode ? (
-            <Link
-              href="/login"
-              className="rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 font-medium text-[var(--text-primary)] shadow-sm transition hover:bg-black/[0.03] md:px-5"
-            >
-              Sign in
-            </Link>
-          ) : null}
+          <Link
+            href="/login"
+            className="rounded-xl border border-[var(--border)] bg-white px-4 py-2.5 font-medium text-[var(--text-primary)] shadow-sm transition hover:bg-black/[0.03] md:px-5"
+          >
+            Sign in
+          </Link>
         </nav>
       </div>
     </header>
