@@ -954,15 +954,17 @@ function SettingsPageContent() {
               </section>
             )}
 
-            <ChecklistSettings
-              checklist={settings.checklist}
-              newChecklistItem={newChecklistItem}
-              maxItems={PLANS[currentPlan].checklistItems}
-              setNewChecklistItem={setNewChecklistItem}
-              onAdd={addChecklistItem}
-              onRemove={removeChecklistItem}
-              onToggle={toggleChecklistItem}
-            />
+            {currentPlan === "FREE" ? (
+              <ChecklistSettings
+                checklist={settings.checklist}
+                newChecklistItem={newChecklistItem}
+                maxItems={PLANS[currentPlan].checklistItems}
+                setNewChecklistItem={setNewChecklistItem}
+                onAdd={addChecklistItem}
+                onRemove={removeChecklistItem}
+                onToggle={toggleChecklistItem}
+              />
+            ) : null}
           </div>
 
           <div className="space-y-4">
@@ -1029,6 +1031,18 @@ function SettingsPageContent() {
                 className="mt-5 h-48 w-full resize-none rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 text-sm font-medium outline-none focus:border-[var(--accent)]"
               />
             </section>
+
+            {currentPlan === "EXPERT" ? (
+              <ChecklistSettings
+                checklist={settings.checklist}
+                newChecklistItem={newChecklistItem}
+                maxItems={PLANS[currentPlan].checklistItems}
+                setNewChecklistItem={setNewChecklistItem}
+                onAdd={addChecklistItem}
+                onRemove={removeChecklistItem}
+                onToggle={toggleChecklistItem}
+              />
+            ) : null}
           </div>
         </div>
 

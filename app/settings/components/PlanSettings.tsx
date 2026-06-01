@@ -195,8 +195,8 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
 
           {isCancelling ? (
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
-              Your Expert plan has been cancelled. You keep Expert access until
-              <span className="font-black"> {periodEndLabel}</span>, then your account will switch to the Free plan.
+              Your subscription ends on
+              <span className="font-black"> {periodEndLabel}</span>. You keep Expert access until then, and your account will switch to the Free plan after that date.
             </div>
           ) : null}
 
@@ -217,7 +217,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
 
             <div className="rounded-xl bg-[#f8f6f2] p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
-                {renewalLabel}
+                {isCancelling ? "Subscription Ends" : renewalLabel}
               </p>
               <p className="mt-2 text-sm font-bold">
                 {periodEndLabel}
