@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/app/components/layout/logo";
 import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
@@ -142,6 +142,7 @@ const resolvePlan = (plan: unknown): PlanKey => (plan === "EXPERT" ? "EXPERT" : 
 
 export default function SetupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
@@ -174,14 +175,28 @@ export default function SetupPage() {
         return;
       }
 
-      const { data: planData } = await supabase
-        .from("user_plans")
-        .select("plan")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const checkoutSuccess = searchParams.get("checkout") === "success";
+      let planData: { plan: string | null } | null = null;
+
+      for (let attempt = 0; attempt < (checkoutSuccess ? 8 : 1); attempt += 1) {
+        const { data } = await supabase
+          .from("user_plans")
+          .select("plan")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (data) {
+          planData = data;
+          break;
+        }
+
+        if (checkoutSuccess) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
 
       if (!planData) {
-        router.replace("/select-plan");
+        router.replace(checkoutSuccess ? "/select-plan?checkout=pending" : "/select-plan");
         return;
       }
 
@@ -213,7 +228,7 @@ export default function SetupPage() {
           strategies: settingsData.strategies || [],
           trade_types: settingsData.trade_types || [],
           emotions: settingsData.emotions || [],
-          checklist: settingsData.checklist || {},
+          checklist: limitChecklistForPlan(settingsData.checklist || {}, resolvedPlan),
           notes_template: settingsData.notes_template || "",
         });
       }
@@ -222,7 +237,7 @@ export default function SetupPage() {
     };
 
     loadSetup();
-  }, [router]);
+  }, [router, searchParams]);
 
   const saveProgress = async (nextSetup = setup) => {
     const {
@@ -368,13 +383,13 @@ export default function SetupPage() {
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <header className="border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-5">
+        <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-10">
           <Logo href="/" />
           <button
             type="button"
             onClick={async () => {
               await supabase.auth.signOut();
-              window.location.href = "/login";
+              window.location.href = "/";
             }}
             className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/app/components/layout/logo";
+import PageLoading from "@/app/components/layout/page-loading";
+import { supabase } from "@/lib/supabase/client";
 
 const planCard =
   "flex h-full min-h-[460px] flex-col rounded-[1.35rem] border border-[var(--border)] bg-white p-6 shadow-sm";
@@ -13,6 +15,46 @@ export default function SelectPlanPage() {
     null,
   );
   const [error, setError] = useState("");
+  const [checkingPlan, setCheckingPlan] = useState(true);
+
+  useEffect(() => {
+    const checkExistingPlan = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setCheckingPlan(false);
+        return;
+      }
+
+      const { data: planData } = await supabase
+        .from("user_plans")
+        .select("plan")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!planData) {
+        setCheckingPlan(false);
+        return;
+      }
+
+      const { data: settingsData } = await supabase
+        .from("user_trade_settings")
+        .select("setup_completed")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (settingsData?.setup_completed) {
+        router.replace("/settings");
+        return;
+      }
+
+      router.replace("/setup");
+    };
+
+    checkExistingPlan();
+  }, [router]);
 
   const startFree = async () => {
     setLoadingPlan("FREE");
@@ -57,6 +99,8 @@ export default function SelectPlanPage() {
 
     window.location.href = payload.url;
   };
+
+  if (checkingPlan) return <PageLoading label="Checking Plan" workspace />;
 
   return (
     <main className="min-h-screen bg-[#f7f5f0] text-[var(--text-primary)]">

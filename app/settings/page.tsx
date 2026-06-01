@@ -402,6 +402,7 @@ function SettingsPageContent() {
   const setupStatus = searchParams.get("setup");
   const isSetupMode = setupStatus === "true" || setupStatus === "complete";
   const setupJustCompleted = setupStatus === "complete";
+  const [showSetupBanner, setShowSetupBanner] = useState(isSetupMode);
 
   const [settings, setSettings] = useState<UserTradeSettings>(defaultSettings);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
@@ -560,6 +561,19 @@ function SettingsPageContent() {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    setShowSetupBanner(isSetupMode);
+
+    if (!setupJustCompleted) return;
+
+    const timer = window.setTimeout(() => {
+      setShowSetupBanner(false);
+      window.history.replaceState(null, "", "/settings");
+    }, 6500);
+
+    return () => window.clearTimeout(timer);
+  }, [isSetupMode, setupJustCompleted]);
 
   const saveSettings = async () => {
     setSaving(true);
@@ -856,7 +870,7 @@ function SettingsPageContent() {
               Configure your trade log, journaling workflow, and account limits.
             </p>
 
-            {isSetupMode ? (
+            {showSetupBanner ? (
               <div className="mt-5 rounded-2xl border border-[var(--gold)]/30 bg-[#fff8e8] px-5 py-4 text-sm font-semibold text-[var(--text-secondary)]">
                 {setupJustCompleted
                   ? "Setup complete. Your template has been saved into Settings, and your workspace pages are now unlocked."

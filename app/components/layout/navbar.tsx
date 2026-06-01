@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/app/components/layout/logo";
+import { supabase } from "@/lib/supabase/client";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
@@ -68,13 +69,20 @@ function NavbarInner({
 
   const pendingLabel = links.find((link) => link.href === pendingHref)?.label;
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-10">
-          <Logo href="/dashboard" />
+        <div className="mx-auto grid h-[72px] max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-6 px-10">
+          <div className="justify-self-start">
+            <Logo href="/dashboard" />
+          </div>
 
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="flex items-center justify-center gap-4 text-sm">
             {links.map((link) => {
               const active = pendingHref
                 ? pendingHref === link.href
@@ -127,6 +135,14 @@ function NavbarInner({
               );
             })}
           </nav>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="justify-self-end rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          >
+            Logout
+          </button>
         </div>
       </header>
 

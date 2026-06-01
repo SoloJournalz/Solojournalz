@@ -100,15 +100,15 @@ export default function DangerZone({
         Reset Settings clears your custom setup. Reset Data deletes saved trades for this account only.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5">
-        <h3 className="text-lg font-bold tracking-tight text-red-900">Delete Account</h3>
-        <p className="mt-2 text-sm leading-6 text-red-800">
+      <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[#f8f6f2] p-5">
+        <h3 className="text-lg font-bold tracking-tight">Delete Account</h3>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
           Permanently delete your account, trades, settings, and plan data. Expert subscriptions are cancelled in Stripe before the account is removed.
         </p>
         <button
           type="button"
           onClick={onDeleteAccount}
-          className="mt-4 rounded-xl bg-red-700 px-5 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(185,28,28,0.18)] transition hover:bg-red-800"
+          className="mt-4 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)] transition hover:bg-[var(--accent-hover)]"
         >
           Delete Account
         </button>
