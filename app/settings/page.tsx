@@ -485,6 +485,12 @@ function SettingsPageContent() {
 
     setUserEmail(user.email || null);
 
+    try {
+      await fetch("/api/stripe/sync-subscription", { method: "POST" });
+    } catch (syncError) {
+      console.error("Stripe subscription sync skipped:", syncError);
+    }
+
     const { data: planData, error: planError } = await supabase
       .from("user_plans")
       .select("plan, subscription_status, current_period_start, current_period_end, cancel_at_period_end, stripe_customer_id")

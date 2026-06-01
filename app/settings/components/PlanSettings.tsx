@@ -77,9 +77,14 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
   };
 
   const status = billingDetails?.subscription_status || (isExpert ? "active" : "free");
-  const isCancelling = Boolean(isExpert && billingDetails?.cancel_at_period_end);
+  const isCancelling = Boolean(
+    isExpert &&
+      (billingDetails?.cancel_at_period_end ||
+        status === "canceled" ||
+        status === "incomplete_expired"),
+  );
   const periodEndLabel = formatDate(billingDetails?.current_period_end);
-  const renewalLabel = isCancelling ? "Switches to Free" : "Renews";
+  const renewalLabel = isCancelling ? "Subscription Ends" : "Renews";
 
   return (
     <section className={cardClass}>
@@ -178,7 +183,9 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
             <div>
               <h3 className="text-lg font-bold">Billing Overview</h3>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Your subscription is managed securely through Stripe.
+                {isCancelling
+                  ? "Your cancellation is scheduled in Stripe."
+                  : "Your subscription is managed securely through Stripe."}
               </p>
             </div>
 
@@ -229,7 +236,9 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
             <div>
               <p className="text-sm font-bold">Plan management</p>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Update payment method, view billing, or manage your Expert subscription.
+                {isCancelling
+                  ? `Your Expert subscription ends on ${periodEndLabel}. You can manage billing or reactivate from Stripe.`
+                  : "Update payment method, view billing, or manage your Expert subscription."}
               </p>
             </div>
 
