@@ -123,7 +123,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname === "/setup" && planRow && setupCompleted) {
-    return redirect(request, "/dashboard");
+    return redirect(request, "/settings");
   }
 
   if (isAuthRoute(pathname) && planRow) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/app/components/layout/navbar";
+import Logo from "@/app/components/layout/logo";
 import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
 import { PLANS, PlanKey } from "@/lib/plans";
@@ -201,7 +201,7 @@ export default function SetupPage() {
       }
 
       if (settingsData?.setup_completed) {
-        router.replace("/settings");
+        window.location.assign("/settings?setup=complete");
         return;
       }
 
@@ -360,14 +360,28 @@ export default function SetupPage() {
       return;
     }
 
-    router.replace("/settings");
+    window.location.assign("/settings?setup=complete");
   };
 
   if (loading) return <PageLoading label="Loading Setup" workspace />;
 
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
-      <Navbar />
+      <header className="border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-5">
+          <Logo href="/" />
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = "/login";
+            }}
+            className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
 
       <section className="mx-auto max-w-6xl px-5 py-10">
         <div className="mb-8 grid gap-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">

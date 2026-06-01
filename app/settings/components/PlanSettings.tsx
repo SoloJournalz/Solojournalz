@@ -42,6 +42,8 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
 
     const response = await fetch("/api/stripe/create-checkout-session", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ returnTo: "settings" }),
     });
 
     const payload = await response.json().catch(() => null);

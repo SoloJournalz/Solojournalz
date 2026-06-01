@@ -399,7 +399,9 @@ const buildSampleTrades = (
 function SettingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isSetupMode = searchParams.get("setup") === "true";
+  const setupStatus = searchParams.get("setup");
+  const isSetupMode = setupStatus === "true" || setupStatus === "complete";
+  const setupJustCompleted = setupStatus === "complete";
 
   const [settings, setSettings] = useState<UserTradeSettings>(defaultSettings);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
@@ -589,11 +591,6 @@ function SettingsPageContent() {
       checklist: payload.checklist,
     }));
 
-    if (isSetupMode) {
-      router.push("/dashboard");
-      return;
-    }
-
     alert("Settings saved.");
   };
 
@@ -752,6 +749,33 @@ function SettingsPageContent() {
     alert("Trade database reset.");
   };
 
+  const deleteAccount = async () => {
+    const firstConfirm = confirm(
+      "Delete your SoloJournalz account? This will delete your trades, settings, plan record, and account access. This cannot be undone.",
+    );
+
+    if (!firstConfirm) return;
+
+    const finalConfirm = confirm(
+      currentPlan === "EXPERT"
+        ? "Expert users: SoloJournalz will cancel your Stripe subscription first, then delete your account data. Continue?"
+        : "Final warning: permanently delete your account and log out?",
+    );
+
+    if (!finalConfirm) return;
+
+    const response = await fetch("/api/account/delete", { method: "POST" });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      alert(payload?.error || "Could not delete account.");
+      return;
+    }
+
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   const togglePlan = async () => {
     setPlanUpdating(true);
 
@@ -834,9 +858,9 @@ function SettingsPageContent() {
 
             {isSetupMode ? (
               <div className="mt-5 rounded-2xl border border-[var(--gold)]/30 bg-[#fff8e8] px-5 py-4 text-sm font-semibold text-[var(--text-secondary)]">
-                Welcome to SoloJournalz. Set up your environments, strategies,
-                pairs, checklist, and journal template before heading into your
-                dashboard.
+                {setupJustCompleted
+                  ? "Setup complete. Your template has been saved into Settings, and your workspace pages are now unlocked."
+                  : "Welcome to SoloJournalz. Set up your environments, strategies, pairs, checklist, and journal template before heading into your dashboard."}
               </div>
             ) : null}
           </div>
@@ -1010,6 +1034,7 @@ function SettingsPageContent() {
             onSimulateNextBillingCycle={simulateNextBillingCycle}
             onDevBillingCycleStartChange={updateDevBillingCycleStart}
             onClearDevBillingCycleStart={clearDevBillingCycleStart}
+            onDeleteAccount={deleteAccount}
           />
 
           <section className={cardClass}>

@@ -42,8 +42,11 @@ async function emailHasBlockingStripeSubscription(email: string) {
   return null;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient();
+  const body = await request.json().catch(() => null) as { returnTo?: string } | null;
+  const checkoutReturnPath = body?.returnTo === "settings" ? "/settings?checkout=success" : "/setup?checkout=success";
+  const checkoutCancelPath = body?.returnTo === "settings" ? "/settings?checkout=cancelled" : "/select-plan?checkout=cancelled";
 
   const {
     data: { user },
@@ -114,8 +117,8 @@ export async function POST() {
     customer_email: existingPlan?.stripe_customer_id ? undefined : user.email || undefined,
     client_reference_id: user.id,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${siteUrl}/setup?checkout=success`,
-    cancel_url: `${siteUrl}/select-plan?checkout=cancelled`,
+    success_url: `${siteUrl}${checkoutReturnPath}`,
+    cancel_url: `${siteUrl}${checkoutCancelPath}`,
     metadata: { user_id: user.id },
     subscription_data: { metadata: { user_id: user.id } },
   });
