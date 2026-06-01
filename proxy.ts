@@ -8,6 +8,11 @@ const PROTECTED_PREFIXES = ["/dashboard", "/trade-log", "/storage", "/settings",
 const SETUP_REQUIRED_PREFIXES = ["/dashboard", "/trade-log", "/storage"];
 const PHONE_BLOCKED_PREFIXES = ["/login", "/auth/callback", ...PROTECTED_PREFIXES];
 const AUTH_ROUTES = ["/login", "/select-plan"];
+
+const isStripeSetupReturn = (request: NextRequest) =>
+  request.nextUrl.pathname === "/setup" &&
+  request.nextUrl.searchParams.get("checkout") === "success" &&
+  Boolean(request.nextUrl.searchParams.get("session_id"));
 const TESTING_ALLOWED_PUBLIC_ROUTES = [
   "/",
   "/unsupported-device",
@@ -96,13 +101,15 @@ export async function proxy(request: NextRequest) {
 
   if (!user) return response;
 
+  const stripeSetupReturn = isStripeSetupReturn(request);
+
   const { data: planRow } = await supabase
     .from("user_plans")
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (isProtectedRoute(pathname) && pathname !== "/select-plan" && !planRow) {
+  if (isProtectedRoute(pathname) && pathname !== "/select-plan" && !planRow && !stripeSetupReturn) {
     return redirect(request, "/select-plan");
   }
 
