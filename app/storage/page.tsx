@@ -105,15 +105,39 @@ export default function StoragePage() {
     }
 
     const { data: planData } = await supabase
-      .from("plans")
+      .from("user_plans")
       .select("plan")
       .eq("user_id", user.id)
       .maybeSingle();
 
+    if (!planData) {
+      router.replace("/select-plan");
+      setLoading(false);
+      return;
+    }
+
     const resolvedPlan: PlanKey =
-      planData?.plan === "EXPERT" ? "EXPERT" : "FREE";
+      planData.plan === "EXPERT" ? "EXPERT" : "FREE";
 
     setCurrentPlan(resolvedPlan);
+
+    const { data: settingsData, error: settingsError } = await supabase
+      .from("user_trade_settings")
+      .select("setup_completed")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (settingsError) {
+      alert(settingsError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (settingsData?.setup_completed !== true) {
+      router.replace("/setup");
+      setLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("trades")

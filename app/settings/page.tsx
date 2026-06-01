@@ -22,20 +22,12 @@ const ADMIN_EMAIL = "m.soliman.business@gmail.com";
 type UserTradeSettings = {
   id?: string;
   environments: string[];
-  markets: string[];
   strategies: string[];
   pairs: string[];
   trade_types: string[];
   emotions: string[];
   checklist: Record<string, boolean>;
   notes_template: string;
-  risk_rules: {
-    riskPercent: string;
-    maxDailyLoss: string;
-    maxWeeklyLoss: string;
-    rrTarget: string;
-  };
-  journal_fields: string[];
   setup_completed?: boolean;
   setup_template?: string | null;
   setup_completed_at?: string | null;
@@ -43,12 +35,11 @@ type UserTradeSettings = {
 
 type SettingListKey =
   | "environments"
-  | "markets"
   | "strategies"
   | "pairs"
   | "trade_types"
   | "emotions"
-  | "journal_fields";
+;
 
 type UsagePreview = {
   used: number;
@@ -82,21 +73,65 @@ type SampleTradeTemplate = {
 
 const defaultSettings: UserTradeSettings = {
   environments: [],
-  markets: [],
   strategies: [],
   pairs: [],
   trade_types: [],
   emotions: [],
   checklist: {},
   notes_template: "",
-  risk_rules: {
-    riskPercent: "1",
-    maxDailyLoss: "3",
-    maxWeeklyLoss: "6",
-    rrTarget: "2",
-  },
-  journal_fields: [],
 };
+
+
+const settingsTemplates = {
+  forex: {
+    label: "Forex",
+    description: "Live/Demo, major FX pairs, scalp and day-trade structure.",
+    environments: ["Live", "Demo"],
+    pairs: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"],
+    strategies: ["Breakout", "Trend Continuation", "Reversal"],
+    trade_types: ["Scalp", "Day Trade", "Swing"],
+    emotions: ["Calm", "Confident", "Impatient"],
+    checklist: {
+      news_checked: false,
+      risk_checked: false,
+      plan_confirmed: false,
+    },
+    notes_template:
+      "Session:\nSetup:\nReason for entry:\nRisk plan:\nTrade management:\nLesson:",
+  },
+  crypto: {
+    label: "Crypto",
+    description: "Live/Paper, BTC and ETH, market-condition review notes.",
+    environments: ["Live", "Paper"],
+    pairs: ["BTC", "ETH"],
+    strategies: ["Breakout", "Trend Continuation", "Swing"],
+    trade_types: ["Scalp", "Day Trade", "Swing"],
+    emotions: ["Calm", "Patient", "FOMO"],
+    checklist: {
+      risk_checked: false,
+      market_condition_checked: false,
+      invalidation_clear: false,
+    },
+    notes_template:
+      "Market condition:\nSetup:\nReason for entry:\nRisk plan:\nTrade management:\nLesson:",
+  },
+  stocks: {
+    label: "Stocks",
+    description: "Live/Paper, popular tickers, sector and market-context notes.",
+    environments: ["Live", "Paper"],
+    pairs: ["AAPL", "TSLA", "NVDA", "MSFT"],
+    strategies: ["Breakout", "Reversal", "Swing"],
+    trade_types: ["Day Trade", "Swing", "Position"],
+    emotions: ["Calm", "Confident", "Hesitant"],
+    checklist: {
+      ticker_reviewed: false,
+      risk_checked: false,
+      market_context_checked: false,
+    },
+    notes_template:
+      "Ticker:\nSector:\nSetup:\nReason for entry:\nRisk plan:\nTrade management:\nLesson:",
+  },
+} as const;
 
 const cardClass =
   "rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]";
@@ -243,7 +278,6 @@ const normalizeSettings = (
   environments: data?.environments?.length
     ? data.environments
     : defaultSettings.environments,
-  markets: data?.markets?.length ? data.markets : defaultSettings.markets,
   strategies: data?.strategies?.length ? data.strategies : defaultSettings.strategies,
   pairs: data?.pairs?.length ? data.pairs : defaultSettings.pairs,
   trade_types: data?.trade_types?.length
@@ -255,10 +289,6 @@ const normalizeSettings = (
     plan,
   ),
   notes_template: data?.notes_template || "",
-  risk_rules: data?.risk_rules || defaultSettings.risk_rules,
-  journal_fields: data?.journal_fields?.length
-    ? data.journal_fields
-    : defaultSettings.journal_fields,
   setup_completed: data?.setup_completed,
   setup_template: data?.setup_template || null,
   setup_completed_at: data?.setup_completed_at || null,
@@ -271,15 +301,13 @@ const buildSettingsPayload = (
 ) => ({
   user_id: userId,
   environments: settings.environments,
-  markets: settings.markets,
   strategies: settings.strategies,
   pairs: settings.pairs,
   trade_types: settings.trade_types,
   emotions: settings.emotions,
   checklist: limitChecklistForPlan(settings.checklist, plan),
   notes_template: settings.notes_template,
-  risk_rules: settings.risk_rules,
-  journal_fields: settings.journal_fields,
+  setup_template: settings.setup_template || null,
   updated_at: new Date().toISOString(),
 });
 
@@ -384,12 +412,10 @@ function SettingsPageContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const [newEnvironment, setNewEnvironment] = useState("");
-  const [newMarket, setNewMarket] = useState("");
   const [newStrategy, setNewStrategy] = useState("");
   const [newPair, setNewPair] = useState("");
   const [newTradeType, setNewTradeType] = useState("");
   const [newEmotion, setNewEmotion] = useState("");
-  const [newJournalField, setNewJournalField] = useState("");
   const [newChecklistItem, setNewChecklistItem] = useState("");
 
   const refreshUsagePreview = async (planOverride?: PlanKey) => {
@@ -764,6 +790,27 @@ function SettingsPageContent() {
     }
   };
 
+
+  const applySettingsTemplate = (templateKey: keyof typeof settingsTemplates) => {
+    const template = settingsTemplates[templateKey];
+
+    if (!confirm(`Apply the ${template.label} template? This will replace your settings fields with the template defaults.`)) {
+      return;
+    }
+
+    setSettings((current) => ({
+      ...current,
+      environments: [...template.environments],
+      pairs: [...template.pairs],
+      strategies: [...template.strategies],
+      trade_types: [...template.trade_types],
+      emotions: currentPlan === "EXPERT" ? [...template.emotions] : [],
+      checklist: limitChecklistForPlan(template.checklist, currentPlan),
+      notes_template: template.notes_template,
+      setup_template: templateKey,
+    }));
+  };
+
   const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
 
   if (loading) {
@@ -808,6 +855,39 @@ function SettingsPageContent() {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <div className="space-y-4">
             <PlanSettings currentPlan={currentPlan} billingDetails={billingDetails} />
+
+            <section className={cardClass}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight">Templates</h2>
+                  <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                    Change your setup template without adding extra settings sections.
+                  </p>
+                </div>
+                <span className="rounded-full border border-[var(--border)] bg-[#efeee9] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
+                  Current: {settings.setup_template || "Custom"}
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {(Object.entries(settingsTemplates) as [keyof typeof settingsTemplates, typeof settingsTemplates[keyof typeof settingsTemplates]][]).map(([key, template]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => applySettingsTemplate(key)}
+                    className={`rounded-2xl border p-4 text-left transition hover:border-[var(--gold)] ${
+                      settings.setup_template === key
+                        ? "border-[var(--accent)] bg-[#fff8e8]"
+                        : "border-[var(--border)] bg-[#f8f6f2]"
+                    }`}
+                  >
+                    <h3 className="text-base font-bold">{template.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{template.description}</p>
+                  </button>
+                ))}
+              </div>
+            </section>
+
 
             {PLANS[currentPlan].psychologyTracking ? (
               <SettingsList
@@ -860,17 +940,6 @@ function SettingsPageContent() {
             />
 
             <SettingsList
-              title="Markets"
-              description="Control the markets configured during setup."
-              items={settings.markets}
-              value={newMarket}
-              placeholder="Add market..."
-              onChange={setNewMarket}
-              onAdd={() => addItem("markets", newMarket, () => setNewMarket(""))}
-              onRemove={(item) => removeItem("markets", item)}
-            />
-
-            <SettingsList
               title="Strategies"
               description="Add the strategies you actively trade."
               items={settings.strategies}
@@ -883,7 +952,7 @@ function SettingsPageContent() {
 
             <SettingsList
               title="Pairs"
-              description="Choose the markets or pairs you want available."
+              description="Choose the pairs, tickers, or assets you want available."
               items={settings.pairs}
               value={newPair}
               placeholder="Add pair..."
@@ -902,54 +971,6 @@ function SettingsPageContent() {
               onAdd={() => addItem("trade_types", newTradeType, () => setNewTradeType(""))}
               onRemove={(item) => removeItem("trade_types", item)}
             />
-
-            <SettingsList
-              title="Journal Fields"
-              description="Control the field focus created by the setup wizard."
-              items={settings.journal_fields}
-              value={newJournalField}
-              placeholder="Add journal field..."
-              onChange={setNewJournalField}
-              onAdd={() => addItem("journal_fields", newJournalField, () => setNewJournalField(""))}
-              onRemove={(item) => removeItem("journal_fields", item)}
-            />
-
-            <section className={cardClass}>
-              <h2 className="text-xl font-bold tracking-tight">Risk Rules</h2>
-
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                Review or edit the risk profile created during setup.
-              </p>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {[
-                  ["riskPercent", "Risk %"],
-                  ["maxDailyLoss", "Max Daily Loss %"],
-                  ["maxWeeklyLoss", "Max Weekly Loss %"],
-                  ["rrTarget", "R:R Target"],
-                ].map(([key, label]) => (
-                  <label key={key} className="block">
-                    <span className="text-sm font-bold">{label}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={settings.risk_rules[key as keyof UserTradeSettings["risk_rules"]]}
-                      onChange={(event) =>
-                        setSettings((current) => ({
-                          ...current,
-                          risk_rules: {
-                            ...current.risk_rules,
-                            [key]: event.target.value,
-                          },
-                        }))
-                      }
-                      className="mt-2 w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--accent)]"
-                    />
-                  </label>
-                ))}
-              </div>
-            </section>
 
             <section className={cardClass}>
               <h2 className="text-xl font-bold tracking-tight">Notes Template</h2>

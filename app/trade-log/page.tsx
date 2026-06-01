@@ -143,13 +143,19 @@ function TradeLogPageContent() {
       }
 
       const { data: planData } = await supabase
-        .from("plans")
+        .from("user_plans")
         .select("plan")
         .eq("user_id", user.id)
         .maybeSingle();
 
+      if (!planData) {
+        router.replace("/select-plan");
+        setLoading(false);
+        return;
+      }
+
       const resolvedPlan: PlanKey =
-        planData?.plan === "EXPERT" ? "EXPERT" : "FREE";
+        planData.plan === "EXPERT" ? "EXPERT" : "FREE";
 
       setCurrentPlan(resolvedPlan);
 
@@ -161,6 +167,12 @@ function TradeLogPageContent() {
 
       if (settingsError) {
         console.error(settingsError);
+      }
+
+      if (settingsData?.setup_completed !== true) {
+        router.replace("/setup");
+        setLoading(false);
+        return;
       }
 
       const loadedSettings: UserTradeSettings = settingsData

@@ -43,7 +43,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [tradesResult, planResult] = await Promise.all([
+  const [tradesResult, planResult, settingsResult] = await Promise.all([
     supabase
       .from("trades")
       .select(
@@ -57,6 +57,12 @@ export default async function DashboardPage() {
       .select("plan")
       .eq("user_id", user.id)
       .maybeSingle(),
+
+    supabase
+      .from("user_trade_settings")
+      .select("setup_completed")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
 
   const fullName =
@@ -68,6 +74,10 @@ export default async function DashboardPage() {
   const firstName = fullName.split(" ")[0];
   if (!planResult.data) {
     redirect("/select-plan");
+  }
+
+  if (settingsResult.data?.setup_completed !== true) {
+    redirect("/setup");
   }
 
   const plan = normalizePlan(planResult.data.plan);

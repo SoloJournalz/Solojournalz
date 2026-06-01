@@ -114,7 +114,7 @@ export async function POST() {
     customer_email: existingPlan?.stripe_customer_id ? undefined : user.email || undefined,
     client_reference_id: user.id,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${siteUrl}/dashboard?checkout=success`,
+    success_url: `${siteUrl}/setup?checkout=success`,
     cancel_url: `${siteUrl}/select-plan?checkout=cancelled`,
     metadata: { user_id: user.id },
     subscription_data: { metadata: { user_id: user.id } },
