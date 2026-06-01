@@ -485,6 +485,29 @@ function SettingsPageContent() {
 
     setUserEmail(user.email || null);
 
+    const checkoutStatus = searchParams.get("checkout");
+    const checkoutSessionId = searchParams.get("session_id");
+    let shouldCleanCheckoutUrl = false;
+
+    if (checkoutStatus === "success" && checkoutSessionId) {
+      try {
+        const syncResponse = await fetch("/api/stripe/sync-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: checkoutSessionId }),
+        });
+
+        if (!syncResponse.ok) {
+          const syncPayload = await syncResponse.json().catch(() => null);
+          console.error("Checkout session sync failed:", syncPayload?.error || syncResponse.statusText);
+        } else {
+          shouldCleanCheckoutUrl = true;
+        }
+      } catch (checkoutSyncError) {
+        console.error("Checkout session sync skipped:", checkoutSyncError);
+      }
+    }
+
     try {
       await fetch("/api/stripe/sync-subscription", { method: "POST" });
     } catch (syncError) {
@@ -562,6 +585,11 @@ function SettingsPageContent() {
 
     setSettings(normalizeSettings(data, resolvedPlan));
     setLoading(false);
+
+    if (shouldCleanCheckoutUrl) {
+      router.replace("/settings");
+      router.refresh();
+    }
   };
 
   useEffect(() => {

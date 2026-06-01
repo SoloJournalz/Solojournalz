@@ -84,7 +84,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
         status === "incomplete_expired"),
   );
   const periodEndLabel = formatDate(billingDetails?.current_period_end);
-  const renewalLabel = isCancelling ? "Subscription Ends" : "Renews";
+  const renewalLabel = isCancelling ? "Cancels On" : "Renews";
 
   return (
     <section className={cardClass}>
@@ -202,7 +202,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
 
           {isCancelling ? (
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
-              Your subscription ends on
+              Your subscription cancels on
               <span className="font-black"> {periodEndLabel}</span>. You keep Expert access until then, and your account will switch to the Free plan after that date.
             </div>
           ) : null}
@@ -224,7 +224,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
 
             <div className="rounded-xl bg-[#f8f6f2] p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
-                {isCancelling ? "Subscription Ends" : renewalLabel}
+                {renewalLabel}
               </p>
               <p className="mt-2 text-sm font-bold">
                 {periodEndLabel}
@@ -237,7 +237,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
               <p className="text-sm font-bold">Plan management</p>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 {isCancelling
-                  ? `Your Expert subscription ends on ${periodEndLabel}. You can manage billing or reactivate from Stripe.`
+                  ? `Your Expert subscription cancels on ${periodEndLabel}. You can manage billing or reactivate from Stripe.`
                   : "Update payment method, view billing, or manage your Expert subscription."}
               </p>
             </div>
