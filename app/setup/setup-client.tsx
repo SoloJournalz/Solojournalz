@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/app/components/layout/logo";
-import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
 import { PLANS, PlanKey } from "@/lib/plans";
 
@@ -399,7 +398,36 @@ export default function SetupPage() {
     window.location.assign("/settings?setup=complete");
   };
 
-  if (loading) return <PageLoading label="Loading Setup" workspace />;
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+        <header className="border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
+          <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-10">
+            <Logo href="/" />
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = "/";
+              }}
+              className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <section className="flex min-h-[calc(100vh-72px)] items-center justify-center px-6 text-center">
+          <div className="flex flex-col items-center">
+            <div className="h-9 w-9 animate-spin rounded-full border-4 border-[#efeee9] border-t-[var(--accent)]" />
+            <p className="mt-5 text-sm font-medium text-[var(--text-secondary)]">
+              Loading setup
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">

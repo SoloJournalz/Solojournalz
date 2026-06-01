@@ -77,9 +77,9 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
   };
 
   const status = billingDetails?.subscription_status || (isExpert ? "active" : "free");
-  const renewalLabel = billingDetails?.cancel_at_period_end
-    ? "Access ends"
-    : "Renews";
+  const isCancelling = Boolean(isExpert && billingDetails?.cancel_at_period_end);
+  const periodEndLabel = formatDate(billingDetails?.current_period_end);
+  const renewalLabel = isCancelling ? "Switches to Free" : "Renews";
 
   return (
     <section className={cardClass}>
@@ -182,10 +182,23 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
               </p>
             </div>
 
-            <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-bold capitalize text-[var(--text-secondary)]">
-              {status.replaceAll("_", " ")}
+            <span
+              className={
+                isCancelling
+                  ? "rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800"
+                  : "rounded-full bg-[#efeee9] px-3 py-1 text-xs font-bold capitalize text-[var(--text-secondary)]"
+              }
+            >
+              {isCancelling ? "Cancelling" : status.replaceAll("_", " ")}
             </span>
           </div>
+
+          {isCancelling ? (
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
+              Your Expert plan has been cancelled. You keep Expert access until
+              <span className="font-black"> {periodEndLabel}</span>, then your account will switch to the Free plan.
+            </div>
+          ) : null}
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-[#f8f6f2] p-4">
@@ -207,7 +220,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
                 {renewalLabel}
               </p>
               <p className="mt-2 text-sm font-bold">
-                {formatDate(billingDetails?.current_period_end)}
+                {periodEndLabel}
               </p>
             </div>
           </div>
@@ -216,7 +229,7 @@ export default function PlanSettings({ currentPlan, billingDetails }: PlanSettin
             <div>
               <p className="text-sm font-bold">Plan management</p>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Update payment method, view billing, or cancel your Expert subscription.
+                Update payment method, view billing, or manage your Expert subscription.
               </p>
             </div>
 
