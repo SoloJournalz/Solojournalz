@@ -1,14 +1,20 @@
-export type SiteMode = "waitlist" | "live";
+export type SiteMode = "testing" | "live";
 
 export function getSiteMode(): SiteMode {
-  const mode =
+  const mode = (
     process.env.SITE_MODE ||
     process.env.NEXT_PUBLIC_SITE_MODE ||
-    "live";
+    "live"
+  ).toLowerCase();
 
-  return mode.toLowerCase() === "waitlist" ? "waitlist" : "live";
+  if (mode === "testing" || mode === "test" || mode === "waitlist") {
+    return "testing";
+  }
+
+  return "live";
 }
 
-export function isWaitlistMode() {
-  return getSiteMode() === "waitlist";
+export function isTestingMode() {
+  return getSiteMode() === "testing";
 }
+

@@ -2,12 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminUser } from "./lib/admin";
 import { isPhoneUserAgent } from "./lib/device";
-import { isWaitlistMode } from "./lib/site-mode";
+import { isTestingMode } from "./lib/site-mode";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/trade-log", "/storage", "/settings", "/select-plan"];
+const PROTECTED_PREFIXES = ["/dashboard", "/trade-log", "/storage", "/settings", "/select-plan", "/setup"];
+const SETUP_REQUIRED_PREFIXES = ["/dashboard", "/trade-log", "/storage"];
 const PHONE_BLOCKED_PREFIXES = ["/login", "/auth/callback", ...PROTECTED_PREFIXES];
 const AUTH_ROUTES = ["/login", "/select-plan"];
-const WAITLIST_ALLOWED_PUBLIC_ROUTES = [
+const TESTING_ALLOWED_PUBLIC_ROUTES = [
   "/",
   "/unsupported-device",
   "/login",
@@ -37,7 +38,7 @@ function redirect(request: NextRequest, pathname: string) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const waitlistMode = isWaitlistMode();
+  const testingMode = isTestingMode();
   const isPhone = isPhoneUserAgent(request.headers.get("user-agent"));
 
   if (isPhone && isPhoneBlockedRoute(pathname)) {
@@ -74,8 +75,8 @@ export async function proxy(request: NextRequest) {
 
   const isAdmin = isAdminUser(user?.email);
 
-  if (waitlistMode && !isAdmin) {
-    const allowedPublicRoute = isRouteMatch(pathname, WAITLIST_ALLOWED_PUBLIC_ROUTES);
+  if (testingMode && !isAdmin) {
+    const allowedPublicRoute = isRouteMatch(pathname, TESTING_ALLOWED_PUBLIC_ROUTES);
 
     if (isProtectedRoute(pathname)) {
       return redirect(request, "/");
@@ -105,8 +106,28 @@ export async function proxy(request: NextRequest) {
     return redirect(request, "/select-plan");
   }
 
-  if (isAuthRoute(pathname) && planRow) {
+  let setupCompleted = false;
+
+  if (planRow) {
+    const { data: settingsRow } = await supabase
+      .from("user_trade_settings")
+      .select("setup_completed")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    setupCompleted = settingsRow?.setup_completed === true;
+  }
+
+  if (isRouteMatch(pathname, SETUP_REQUIRED_PREFIXES) && planRow && !setupCompleted) {
+    return redirect(request, "/setup");
+  }
+
+  if (pathname === "/setup" && planRow && setupCompleted) {
     return redirect(request, "/dashboard");
+  }
+
+  if (isAuthRoute(pathname) && planRow) {
+    return redirect(request, setupCompleted ? "/dashboard" : "/setup");
   }
 
   return response;

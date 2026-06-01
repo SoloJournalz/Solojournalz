@@ -22,20 +22,33 @@ const ADMIN_EMAIL = "m.soliman.business@gmail.com";
 type UserTradeSettings = {
   id?: string;
   environments: string[];
+  markets: string[];
   strategies: string[];
   pairs: string[];
   trade_types: string[];
   emotions: string[];
   checklist: Record<string, boolean>;
   notes_template: string;
+  risk_rules: {
+    riskPercent: string;
+    maxDailyLoss: string;
+    maxWeeklyLoss: string;
+    rrTarget: string;
+  };
+  journal_fields: string[];
+  setup_completed?: boolean;
+  setup_template?: string | null;
+  setup_completed_at?: string | null;
 };
 
 type SettingListKey =
   | "environments"
+  | "markets"
   | "strategies"
   | "pairs"
   | "trade_types"
-  | "emotions";
+  | "emotions"
+  | "journal_fields";
 
 type UsagePreview = {
   used: number;
@@ -69,12 +82,20 @@ type SampleTradeTemplate = {
 
 const defaultSettings: UserTradeSettings = {
   environments: [],
+  markets: [],
   strategies: [],
   pairs: [],
   trade_types: [],
   emotions: [],
   checklist: {},
   notes_template: "",
+  risk_rules: {
+    riskPercent: "1",
+    maxDailyLoss: "3",
+    maxWeeklyLoss: "6",
+    rrTarget: "2",
+  },
+  journal_fields: [],
 };
 
 const cardClass =
@@ -222,6 +243,7 @@ const normalizeSettings = (
   environments: data?.environments?.length
     ? data.environments
     : defaultSettings.environments,
+  markets: data?.markets?.length ? data.markets : defaultSettings.markets,
   strategies: data?.strategies?.length ? data.strategies : defaultSettings.strategies,
   pairs: data?.pairs?.length ? data.pairs : defaultSettings.pairs,
   trade_types: data?.trade_types?.length
@@ -233,6 +255,13 @@ const normalizeSettings = (
     plan,
   ),
   notes_template: data?.notes_template || "",
+  risk_rules: data?.risk_rules || defaultSettings.risk_rules,
+  journal_fields: data?.journal_fields?.length
+    ? data.journal_fields
+    : defaultSettings.journal_fields,
+  setup_completed: data?.setup_completed,
+  setup_template: data?.setup_template || null,
+  setup_completed_at: data?.setup_completed_at || null,
 });
 
 const buildSettingsPayload = (
@@ -242,12 +271,15 @@ const buildSettingsPayload = (
 ) => ({
   user_id: userId,
   environments: settings.environments,
+  markets: settings.markets,
   strategies: settings.strategies,
   pairs: settings.pairs,
   trade_types: settings.trade_types,
   emotions: settings.emotions,
   checklist: limitChecklistForPlan(settings.checklist, plan),
   notes_template: settings.notes_template,
+  risk_rules: settings.risk_rules,
+  journal_fields: settings.journal_fields,
   updated_at: new Date().toISOString(),
 });
 
@@ -352,10 +384,12 @@ function SettingsPageContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const [newEnvironment, setNewEnvironment] = useState("");
+  const [newMarket, setNewMarket] = useState("");
   const [newStrategy, setNewStrategy] = useState("");
   const [newPair, setNewPair] = useState("");
   const [newTradeType, setNewTradeType] = useState("");
   const [newEmotion, setNewEmotion] = useState("");
+  const [newJournalField, setNewJournalField] = useState("");
   const [newChecklistItem, setNewChecklistItem] = useState("");
 
   const refreshUsagePreview = async (planOverride?: PlanKey) => {
@@ -826,6 +860,17 @@ function SettingsPageContent() {
             />
 
             <SettingsList
+              title="Markets"
+              description="Control the markets configured during setup."
+              items={settings.markets}
+              value={newMarket}
+              placeholder="Add market..."
+              onChange={setNewMarket}
+              onAdd={() => addItem("markets", newMarket, () => setNewMarket(""))}
+              onRemove={(item) => removeItem("markets", item)}
+            />
+
+            <SettingsList
               title="Strategies"
               description="Add the strategies you actively trade."
               items={settings.strategies}
@@ -857,6 +902,54 @@ function SettingsPageContent() {
               onAdd={() => addItem("trade_types", newTradeType, () => setNewTradeType(""))}
               onRemove={(item) => removeItem("trade_types", item)}
             />
+
+            <SettingsList
+              title="Journal Fields"
+              description="Control the field focus created by the setup wizard."
+              items={settings.journal_fields}
+              value={newJournalField}
+              placeholder="Add journal field..."
+              onChange={setNewJournalField}
+              onAdd={() => addItem("journal_fields", newJournalField, () => setNewJournalField(""))}
+              onRemove={(item) => removeItem("journal_fields", item)}
+            />
+
+            <section className={cardClass}>
+              <h2 className="text-xl font-bold tracking-tight">Risk Rules</h2>
+
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Review or edit the risk profile created during setup.
+              </p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {[
+                  ["riskPercent", "Risk %"],
+                  ["maxDailyLoss", "Max Daily Loss %"],
+                  ["maxWeeklyLoss", "Max Weekly Loss %"],
+                  ["rrTarget", "R:R Target"],
+                ].map(([key, label]) => (
+                  <label key={key} className="block">
+                    <span className="text-sm font-bold">{label}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={settings.risk_rules[key as keyof UserTradeSettings["risk_rules"]]}
+                      onChange={(event) =>
+                        setSettings((current) => ({
+                          ...current,
+                          risk_rules: {
+                            ...current.risk_rules,
+                            [key]: event.target.value,
+                          },
+                        }))
+                      }
+                      className="mt-2 w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--accent)]"
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
 
             <section className={cardClass}>
               <h2 className="text-xl font-bold tracking-tight">Notes Template</h2>

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isAdminUser } from "@/lib/admin";
-import { isWaitlistMode } from "@/lib/site-mode";
+import { isTestingMode } from "@/lib/site-mode";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -47,8 +47,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login", requestUrl.origin));
   }
 
-  if (isWaitlistMode() && !isAdminUser(user.email)) {
-    return NextResponse.redirect(new URL("/?joined=1", requestUrl.origin));
+  if (isTestingMode() && !isAdminUser(user.email)) {
+    return NextResponse.redirect(new URL("/", requestUrl.origin));
   }
 
   const { data: planRow } = await supabase
@@ -59,6 +59,16 @@ export async function GET(request: Request) {
 
   if (!planRow) {
     return NextResponse.redirect(new URL("/select-plan", requestUrl.origin));
+  }
+
+  const { data: settingsRow } = await supabase
+    .from("user_trade_settings")
+    .select("setup_completed")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (settingsRow?.setup_completed !== true) {
+    return NextResponse.redirect(new URL("/setup", requestUrl.origin));
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin));

@@ -29,7 +29,7 @@ export default function SelectPlanPage() {
       return;
     }
 
-    router.replace("/settings?setup=true");
+    router.replace("/setup");
   };
 
   const startExpert = async () => {
