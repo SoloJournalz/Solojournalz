@@ -100,7 +100,7 @@ export default function SelectPlanPage() {
     window.location.href = payload.url;
   };
 
-  if (checkingPlan) return <PageLoading label="Checking Plan" workspace />;
+  if (checkingPlan) return <PageLoading label="Checking Plan" />;
 
   return (
     <main className="min-h-screen bg-[#f7f5f0] text-[var(--text-primary)]">
