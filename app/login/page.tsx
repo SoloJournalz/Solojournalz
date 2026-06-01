@@ -3,8 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/app/components/layout/logo";
-import PublicNavbar from "@/app/components/layout/public-navbar";
-import PublicFooter from "@/app/components/layout/public-footer";
 import { supabase } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -53,7 +51,11 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
-      <PublicNavbar />
+      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-[72px] max-w-[1600px] items-center px-6 sm:px-10">
+          <Logo href="/" />
+        </div>
+      </header>
 
       <section className="flex min-h-[calc(100vh-72px)] items-center justify-center px-4 py-16 sm:px-6">
         <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] p-7 shadow-[0_8px_40px_rgba(0,0,0,0.05)] sm:p-9">
@@ -81,7 +83,6 @@ export default function LoginPage() {
         </div>
       </section>
 
-      <PublicFooter />
     </main>
   );
 }

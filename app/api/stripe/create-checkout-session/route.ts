@@ -45,7 +45,7 @@ async function emailHasBlockingStripeSubscription(email: string) {
 export async function POST(request: Request) {
   const supabase = await createClient();
   const body = await request.json().catch(() => null) as { returnTo?: string } | null;
-  const checkoutReturnPath = body?.returnTo === "settings" ? "/settings?checkout=success" : "/setup?checkout=success";
+  const checkoutReturnPath = body?.returnTo === "settings" ? "/settings?checkout=success" : "/setup?checkout=success&session_id={CHECKOUT_SESSION_ID}";
   const checkoutCancelPath = body?.returnTo === "settings" ? "/settings?checkout=cancelled" : "/select-plan?checkout=cancelled";
 
   const {

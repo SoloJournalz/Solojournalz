@@ -176,9 +176,30 @@ export default function SetupPage() {
       }
 
       const checkoutSuccess = searchParams.get("checkout") === "success";
+      const checkoutSessionId = searchParams.get("session_id");
+
+      if (checkoutSuccess && checkoutSessionId) {
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          const syncResponse = await fetch("/api/stripe/sync-checkout-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId: checkoutSessionId }),
+          });
+
+          if (syncResponse.ok) break;
+
+          if (attempt === 9) {
+            router.replace("/select-plan?checkout=pending");
+            return;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
       let planData: { plan: string | null } | null = null;
 
-      for (let attempt = 0; attempt < (checkoutSuccess ? 8 : 1); attempt += 1) {
+      for (let attempt = 0; attempt < (checkoutSuccess ? 12 : 1); attempt += 1) {
         const { data } = await supabase
           .from("user_plans")
           .select("plan")
