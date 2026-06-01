@@ -10,6 +10,43 @@ const BLOCKING_SUBSCRIPTION_STATUSES = new Set<Stripe.Subscription.Status>([
   "unpaid",
 ]);
 
+type StripeSubscriptionWithPeriod = Stripe.Subscription & {
+  current_period_start?: number | null;
+  current_period_end?: number | null;
+};
+
+type StripeSubscriptionItemWithPeriod = Stripe.SubscriptionItem & {
+  current_period_start?: number | null;
+  current_period_end?: number | null;
+};
+
+const toIsoDate = (timestamp: number | null | undefined) =>
+  timestamp ? new Date(timestamp * 1000).toISOString() : null;
+
+const getCustomerId = (
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null,
+) => {
+  if (!customer) return null;
+  return typeof customer === "string" ? customer : customer.id;
+};
+
+function getSubscriptionPeriod(subscription: Stripe.Subscription) {
+  const typedSubscription = subscription as StripeSubscriptionWithPeriod;
+  const firstItem = subscription.items.data[0] as
+    | StripeSubscriptionItemWithPeriod
+    | undefined;
+
+  return {
+    currentPeriodStart:
+      typedSubscription.current_period_start ?? firstItem?.current_period_start ?? null,
+    currentPeriodEnd:
+      typedSubscription.current_period_end ?? firstItem?.current_period_end ?? null,
+  };
+}
+
+const isScheduledToCancel = (subscription: Stripe.Subscription) =>
+  Boolean(subscription.cancel_at_period_end || subscription.cancel_at);
+
 async function emailHasBlockingStripeSubscription(email: string) {
   const customers = await stripe.customers.list({
     email,
@@ -40,6 +77,52 @@ async function emailHasBlockingStripeSubscription(email: string) {
   }
 
   return null;
+}
+
+async function syncExistingExpertSubscription({
+  supabase,
+  userId,
+  subscription,
+}: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  userId: string;
+  subscription: Stripe.Subscription;
+}) {
+  const { currentPeriodStart, currentPeriodEnd } = getSubscriptionPeriod(subscription);
+  const priceId = subscription.items.data[0]?.price.id ?? null;
+
+  const { error: planSyncError } = await supabase.from("user_plans").upsert(
+    {
+      user_id: userId,
+      plan: "EXPERT",
+      trade_limit_monthly: 999999,
+      screenshot_limit_monthly: 999999,
+      stripe_customer_id: getCustomerId(subscription.customer),
+      stripe_subscription_id: subscription.id,
+      stripe_price_id: priceId,
+      subscription_status: subscription.status,
+      current_period_start: toIsoDate(currentPeriodStart),
+      current_period_end: toIsoDate(currentPeriodEnd),
+      cancel_at_period_end: isScheduledToCancel(subscription),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (planSyncError) return planSyncError.message;
+
+  const { error: settingsSyncError } = await supabase.from("user_trade_settings").upsert(
+    {
+      user_id: userId,
+      setup_completed: false,
+      setup_completed_at: null,
+      setup_template: null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+
+  return settingsSyncError?.message ?? null;
 }
 
 export async function POST(request: Request) {
@@ -88,26 +171,24 @@ export async function POST(request: Request) {
     existingPlan?.cancel_at_period_end === true;
 
   if (hasBlockingLocalSubscription) {
-    return NextResponse.json(
-      {
-        error:
-          "This account already has an Expert subscription. Manage billing from Settings instead.",
-      },
-      { status: 409 },
-    );
+    return NextResponse.json({ redirectUrl: "/setup?checkout=recovered" });
   }
 
   if (user.email) {
     const blockingStripeSubscription = await emailHasBlockingStripeSubscription(user.email);
 
     if (blockingStripeSubscription) {
-      return NextResponse.json(
-        {
-          error:
-            "This email already has an active or scheduled Expert subscription. Manage the existing subscription in Stripe Billing before starting another checkout.",
-        },
-        { status: 409 },
-      );
+      const syncError = await syncExistingExpertSubscription({
+        supabase,
+        userId: user.id,
+        subscription: blockingStripeSubscription,
+      });
+
+      if (syncError) {
+        return NextResponse.json({ error: syncError }, { status: 500 });
+      }
+
+      return NextResponse.json({ redirectUrl: "/setup?checkout=recovered" });
     }
   }
 

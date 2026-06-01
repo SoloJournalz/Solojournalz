@@ -91,6 +91,11 @@ export default function SelectPlanPage() {
 
     const payload = await response.json();
 
+    if (payload?.redirectUrl) {
+      router.replace(payload.redirectUrl);
+      return;
+    }
+
     if (!payload?.url) {
       setError("Checkout session did not return a URL.");
       setLoadingPlan(null);
