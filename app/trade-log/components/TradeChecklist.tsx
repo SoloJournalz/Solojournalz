@@ -15,9 +15,9 @@ export default function TradeChecklist({
   limitLabel,
 }: TradeChecklistProps) {
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold tracking-tight">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-4 lg:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold tracking-tight lg:text-xl">
           Pre-Trade Checklist
         </h2>
 
@@ -34,14 +34,14 @@ export default function TradeChecklist({
             type="button"
             key={key}
             onClick={() => onToggle(key as keyof TradeFormData["checklist"])}
-            className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-left text-sm font-semibold"
+            className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-left text-xs font-semibold sm:text-sm"
           >
             <span
-              className={`h-5 w-5 rounded-md ${
+              className={`h-4 w-4 shrink-0 rounded-md sm:h-5 sm:w-5 ${
                 value ? "bg-[var(--accent)]" : "bg-white"
               }`}
             />
-            <span>{formatChecklistLabel(key)}</span>
+            <span className="truncate">{formatChecklistLabel(key)}</span>
           </button>
         ))}
       </div>

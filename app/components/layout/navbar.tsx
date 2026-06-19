@@ -16,7 +16,7 @@ const links = [
 
 function WorkspaceTransitionLoader({ label }: { label: string }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[72px] z-40 flex items-center justify-center bg-[var(--background)] text-[var(--text-primary)]">
+    <div className="fixed inset-x-0 bottom-0 top-[64px] z-40 flex items-center justify-center bg-[var(--background)] text-[var(--text-primary)] lg:top-[72px]">
       <div className="flex flex-col items-center px-6 text-center">
         <div className="h-9 w-9 animate-spin rounded-full border-4 border-[#efeee9] border-t-[var(--accent)]" />
         <p className="mt-5 text-sm font-medium text-[var(--text-secondary)]">
@@ -61,7 +61,7 @@ function NavbarInner({
       hideTimerRef.current = setTimeout(() => {
         setPendingHref(null);
         setShowTransitionLoader(false);
-      }, 900);
+      }, 700);
     }
   }, [pathname, pendingHref]);
 
@@ -80,20 +80,14 @@ function NavbarInner({
     window.location.href = "/";
   };
 
-  const handleNavClick = (
-    event: MouseEvent<HTMLAnchorElement>,
-    href: string,
-  ) => {
-    if (pathname === href) {
-      setMenuOpen(false);
-      return;
-    }
+  const handleNavClick = (href: string, e: MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === href) return;
 
     if (hasUnsavedChanges) {
       const leave = confirm("You have unsaved changes. Leave without saving?");
 
       if (!leave) {
-        event.preventDefault();
+        e.preventDefault();
         setPendingHref(null);
         setShowTransitionLoader(false);
         return;
@@ -106,84 +100,102 @@ function NavbarInner({
 
     setPendingHref(href);
     setShowTransitionLoader(true);
-    setMenuOpen(false);
   };
 
-  const renderLink = (link: (typeof links)[number], mobile = false) => {
-    const active = pendingHref ? pendingHref === link.href : pathname === link.href;
-    const label =
-      link.href === "/trade-log" && isEditMode
-        ? "Trade Log • Edit Mode"
-        : link.label;
-
-    return (
-      <Link
-        key={link.href}
-        href={link.href}
-        prefetch
-        onMouseEnter={() => router.prefetch(link.href)}
-        onFocus={() => router.prefetch(link.href)}
-        onClick={(event) => handleNavClick(event, link.href)}
-        aria-current={active ? "page" : undefined}
-        className={
-          active
-            ? `${mobile ? "w-full" : ""} rounded-xl bg-[var(--accent)] px-4 py-2.5 text-center font-semibold text-white shadow-[0_6px_18px_rgba(110,17,17,0.18)] transition lg:px-5`
-            : `${mobile ? "w-full" : ""} rounded-xl px-4 py-2.5 text-center font-semibold text-[var(--text-secondary)] transition hover:bg-black/[0.03] hover:text-[var(--text-primary)] lg:px-5`
-        }
-      >
-        {label}
-      </Link>
-    );
-  };
+  const navLinkClass = (active: boolean, compact = false) =>
+    active
+      ? `rounded-xl bg-[var(--accent)] font-bold text-white shadow-[0_6px_18px_rgba(110,17,17,0.18)] transition ${
+          compact ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm"
+        }`
+      : `rounded-xl font-bold text-[var(--text-secondary)] transition hover:bg-black/[0.03] hover:text-[var(--text-primary)] ${
+          compact ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm"
+        }`;
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex min-h-[72px] max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-6 lg:px-10">
-          <div className="min-w-0 shrink-0 lg:justify-self-start">
+      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-[64px] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:h-[72px] lg:grid lg:grid-cols-[auto_1fr_auto] lg:px-10">
+          <div className="min-w-0 justify-self-start">
             <Logo href="/dashboard" />
           </div>
 
-          <nav className="hidden items-center justify-center gap-2 text-sm lg:flex">
-            {links.map((link) => renderLink(link))}
+          <nav className="hidden items-center justify-center gap-3 text-sm lg:flex">
+            {links.map((link) => {
+              const active = pendingHref
+                ? pendingHref === link.href
+                : pathname === link.href;
+
+              const label =
+                link.href === "/trade-log" && isEditMode
+                  ? "Trade Log • Edit Mode"
+                  : link.label;
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  prefetch
+                  onMouseEnter={() => router.prefetch(link.href)}
+                  onFocus={() => router.prefetch(link.href)}
+                  onClick={(e) => handleNavClick(link.href, e)}
+                  aria-current={active ? "page" : undefined}
+                  className={navLinkClass(active)}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="flex shrink-0 items-center gap-2 lg:justify-self-end">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] sm:inline-flex"
-            >
-              Logout
-            </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="hidden justify-self-end rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] lg:block"
+          >
+            Logout
+          </button>
 
+          <div className="relative lg:hidden">
             <button
               type="button"
-              aria-label="Open workspace menu"
+              onClick={() => setMenuOpen((current) => !current)}
+              className="rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-extrabold text-[var(--text-primary)] shadow-[0_5px_15px_rgba(0,0,0,0.06)]"
               aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-              className="inline-flex rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-black text-[var(--text-primary)] shadow-sm lg:hidden"
             >
               Menu
             </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-[245px] rounded-2xl border border-[var(--border)] bg-white p-2 shadow-[0_18px_35px_rgba(0,0,0,0.12)]">
+                <div className="space-y-1">
+                  {links.map((link) => {
+                    const active = pathname === link.href;
+
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        prefetch
+                        onClick={(e) => handleNavClick(link.href, e)}
+                        className={`block w-full text-center ${navLinkClass(active, true)}`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="block w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-center text-sm font-bold text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
-        {menuOpen ? (
-          <div className="border-t border-[var(--border)] bg-white px-4 py-4 lg:hidden">
-            <nav className="mx-auto grid max-w-[1600px] gap-2 text-sm">
-              {links.map((link) => renderLink(link, true))}
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-center text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] sm:hidden"
-              >
-                Logout
-              </button>
-            </nav>
-          </div>
-        ) : null}
       </header>
 
       {showTransitionLoader ? (
