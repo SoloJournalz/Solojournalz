@@ -14,7 +14,7 @@ export default function SaveTradeBar({
   onSave,
 }: SaveTradeBarProps) {
   return (
-    <div className="mt-3 flex justify-end gap-2 sm:gap-3">
+    <div className="mt-4 flex justify-end gap-3 sm:mt-5">
       {isEditMode && (
         <button
           type="button"
@@ -29,7 +29,7 @@ export default function SaveTradeBar({
 
             onCancel();
           }}
-          className="rounded-2xl bg-[#efeee9] px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)] sm:px-8 sm:py-3"
+          className="rounded-2xl bg-[#efeee9] px-6 py-3 font-semibold text-[var(--text-secondary)] transition hover:-translate-y-0.5 hover:text-[var(--accent)] sm:px-8"
         >
           Cancel
         </button>
@@ -38,7 +38,7 @@ export default function SaveTradeBar({
       <button
         onClick={onSave}
         disabled={saving}
-        className="rounded-2xl bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60 sm:px-8 sm:py-3"
+        className="w-full rounded-2xl bg-[var(--accent)] px-6 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto sm:px-8"
       >
         {saving
           ? isEditMode

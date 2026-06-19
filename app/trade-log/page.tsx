@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/layout/navbar";
 import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
-import { PLANS, PlanKey } from "@/lib/plans";
+import { PlanKey } from "@/lib/plans";
 import { canCreateTrade, getCreatedAtForNewTrade, getCurrentUserPlan } from "@/lib/usage";
 import type { TradeFormData } from "@/types/trade";
 
 import TradeDetailsForm from "./components/TradeDetailsForm";
 import SaveTradeBar from "./components/SaveTradeBar";
-import TradeChecklist from "./components/TradeChecklist";
 
 type UserTradeSettings = {
   environments: string[];
@@ -64,9 +63,7 @@ const createInitialForm = (
   pnl: 0,
   result: "BE",
   notes: "",
-  checklist: Object.fromEntries(
-    Object.entries(settings.checklist || {}).slice(0, PLANS.FREE.checklistItems),
-  ),
+  checklist: {},
   emotions: [],
   progress_percent: 30,
 });
@@ -189,17 +186,6 @@ function TradeLogPageContent() {
     setSavedTradeId(null);
   };
 
-  const toggleChecklist = (key: keyof TradeFormData["checklist"]) => {
-    setForm((current) => ({
-      ...current,
-      checklist: {
-        ...current.checklist,
-        [key]: !current.checklist[key],
-      },
-    }));
-    markDirty();
-  };
-
   const updateNumber = (key: keyof TradeFormData, value: string) => {
     setForm((current) => {
       const nextValue = value === "" || value === "." ? 0 : Number(value);
@@ -271,7 +257,6 @@ function TradeLogPageContent() {
       trade_type: form.trade_type || null,
       direction: form.direction,
       entry_price: form.entry_price || null,
-      checklist: form.checklist,
       progress_percent: 30,
     };
 
@@ -303,84 +288,72 @@ function TradeLogPageContent() {
   }
 
   return (
-    <main className="h-[100dvh] overflow-hidden bg-[var(--background)] text-[var(--text-primary)]">
+    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] md:h-screen md:overflow-hidden">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto flex h-[calc(100dvh-64px)] max-w-5xl flex-col gap-3 px-3 py-3 sm:px-5 lg:h-[calc(100dvh-72px)] lg:py-4">
-        <div className="shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--accent)] sm:text-xs">
-            Phase 1 · 30% Setup
+      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:h-[calc(100vh-73px)] md:overflow-hidden md:py-4">
+        <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Phase 1 · 30% Capture
           </p>
-          <h1 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight">
             Fast Trade Log
           </h1>
-          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)] sm:text-sm">
-            Capture the setup quickly. Execution and final review happen in Trade Review.
+          <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+            Capture the setup quickly. Execution, screenshots, and final review happen in Trade Review.
           </p>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="min-h-0">
-            <TradeDetailsForm
-              form={form}
-              settings={settings}
-              isEditMode={false}
-              mode="capture"
-              onReset={resetTradeLog}
-              updateForm={updateForm}
-              updateNumber={updateNumber}
-            />
+        <TradeDetailsForm
+          form={form}
+          settings={settings}
+          isEditMode={false}
+          mode="capture"
+          onReset={resetTradeLog}
+          updateForm={updateForm}
+          updateNumber={updateNumber}
+        />
+
+        {saveError && (
+          <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[#f8f6f2] p-4 text-sm font-semibold text-[var(--accent)] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+            {saveError}
           </div>
+        )}
 
-          <div className="min-h-0 space-y-3">
-            <TradeChecklist
-              checklist={form.checklist}
-              onToggle={toggleChecklist}
-              limitLabel={`${Object.keys(form.checklist).length}/${PLANS[currentPlan].checklistItems}`}
-            />
+        {savedTradeId ? (
+          <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+            <h2 className="text-xl font-bold tracking-tight">Trade captured.</h2>
+            <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+              This trade is saved at 30% completion.
+            </p>
 
-            {saveError && (
-              <div className="rounded-2xl border border-[var(--border)] bg-[#f8f6f2] p-3 text-xs font-semibold text-[var(--accent)] shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:text-sm">
-                {saveError}
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={resetTradeLog}
+                className="rounded-2xl bg-[#efeee9] px-8 py-3 font-semibold text-[var(--text-secondary)] transition hover:-translate-y-0.5 hover:text-[var(--accent)]"
+              >
+                Go back to Trade Log
+              </button>
 
-            {savedTradeId ? (
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                <h2 className="text-lg font-bold tracking-tight">Trade captured.</h2>
-                <p className="mt-1 text-xs font-medium text-[var(--text-secondary)] sm:text-sm">
-                  Saved at 30% completion.
-                </p>
-
-                <div className="mt-3 grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/trade-review?trade=${savedTradeId}&phase=2`)}
-                    className="rounded-2xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)]"
-                  >
-                    Continue to Phase 2
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={resetTradeLog}
-                    className="rounded-2xl bg-[#efeee9] px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)]"
-                  >
-                    Log Another Trade
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <SaveTradeBar
-                isEditMode={false}
-                saving={saving}
-                hasUnsavedChanges={hasUnsavedChanges}
-                onCancel={resetTradeLog}
-                onSave={handleSaveTrade}
-              />
-            )}
+              <button
+                type="button"
+                onClick={() => router.push(`/trade-review?trade=${savedTradeId}`)}
+                className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)]"
+              >
+                Continue to Review this trade
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <SaveTradeBar
+            isEditMode={false}
+            saving={saving}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onCancel={resetTradeLog}
+            onSave={handleSaveTrade}
+          />
+        )}
       </section>
     </main>
   );

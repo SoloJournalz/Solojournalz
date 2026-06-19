@@ -6,6 +6,7 @@ type Trade = {
   strategy: string | null;
   result: "WIN" | "LOSS" | "BE" | null;
   pnl?: number | null;
+  progress_percent?: 30 | 60 | 100 | null;
   created_at: string;
 };
 
@@ -32,6 +33,14 @@ const formatPnl = (value?: number | null) => {
   return `P/L ${number}`;
 };
 
+const getProgress = (trade: Trade) => {
+  if (trade.progress_percent === 100 || trade.progress_percent === 60) {
+    return trade.progress_percent;
+  }
+
+  return 30;
+};
+
 export default function TradeReviewTradeList({
   trades = [],
   selectedTradeId,
@@ -46,89 +55,98 @@ export default function TradeReviewTradeList({
   onDeleteTrade,
 }: TradeReviewTradeListProps) {
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-4 lg:p-5">
-      <div className="shrink-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--accent)] sm:text-xs">
-          Saved Trades
-        </p>
-        <h2 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">
-          Select a trade
-        </h2>
-      </div>
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5 md:flex md:h-full md:min-h-0 md:flex-col">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+            Saved Trades
+          </p>
+          <h2 className="mt-1 text-xl font-bold tracking-tight">Select a trade</h2>
+        </div>
 
-      <div className="mt-3 grid shrink-0 gap-2">
         <button
           type="button"
           onClick={onDeleteTrade}
           disabled={!selectedTradeId}
-          className="rounded-xl bg-[#efeee9] px-4 py-2 text-sm font-bold text-[var(--accent)] transition disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-xl bg-[#efeee9] px-4 py-2 text-xs font-black text-[var(--accent)] transition hover:-translate-y-0.5 hover:bg-[var(--accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Delete selected
+          Delete
         </button>
+      </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <select
-            value={environmentFilter}
-            onChange={(e) => onEnvironmentFilterChange(e.target.value)}
-            className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none focus:border-[var(--accent)]"
-          >
-            <option value="All">All Environments</option>
-            <option value="LIVE">Live</option>
-            <option value="TESTING">Testing</option>
-            <option value="BACKTESTING">Backtesting</option>
-            <option value="CHALLENGE">Challenge</option>
-          </select>
+      <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-1">
+        <select
+          value={environmentFilter}
+          onChange={(e) => onEnvironmentFilterChange(e.target.value)}
+          className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-3 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)]"
+        >
+          <option value="All">All Environments</option>
+          <option value="LIVE">Live</option>
+          <option value="TESTING">Testing</option>
+          <option value="BACKTESTING">Backtesting</option>
+          <option value="CHALLENGE">Challenge</option>
+        </select>
 
-          <select
-            value={filter}
-            onChange={(e) => onFilterChange(e.target.value)}
-            className="rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none focus:border-[var(--accent)]"
-          >
-            <option>Newest First</option>
-            <option>Oldest First</option>
-            <option>Wins</option>
-            <option>Losses</option>
-            <option>Break Even</option>
-          </select>
-        </div>
+        <select
+          value={filter}
+          onChange={(e) => onFilterChange(e.target.value)}
+          className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-3 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)]"
+        >
+          <option>Newest First</option>
+          <option>Oldest First</option>
+          <option>Wins</option>
+          <option>Losses</option>
+          <option>Break Even</option>
+        </select>
 
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search trades..."
-          className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-2.5 text-sm font-semibold outline-none placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)]"
+          className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-3 py-2.5 text-sm font-semibold outline-none transition placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)]"
         />
       </div>
 
-      <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-2">
+      <div className="mt-3 min-h-[170px] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-2 md:min-h-0 md:flex-1">
         {loading ? (
-          <div className="flex h-full items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
+          <div className="flex h-full min-h-[150px] items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
             Loading trades
           </div>
         ) : trades.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
+          <div className="flex h-full min-h-[150px] items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
             No trades available.
           </div>
         ) : (
           <div className="space-y-2">
-            {trades.map((trade, index) => (
-              <button
-                key={trade.id}
-                type="button"
-                onClick={() => onSelectTrade(trade)}
-                className={`w-full rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                  selectedTradeId === trade.id
-                    ? "bg-[var(--accent)] text-white"
-                    : "bg-white text-[var(--text-primary)] hover:bg-black/5"
-                }`}
-              >
-                #{index + 1} · {trade.strategy || "No Strategy"} · {trade.pair}
+            {trades.map((trade, index) => {
+              const progress = getProgress(trade);
 
-                <span className="block pt-1 text-xs opacity-70">
-                  {trade.environment || "N/A"} · {trade.result || "N/A"} · {formatPnl(trade.pnl)} · {trade.trade_date}
-                </span>
-              </button>
-            ))}
+              return (
+                <button
+                  key={trade.id}
+                  type="button"
+                  onClick={() => onSelectTrade(trade)}
+                  className={`w-full rounded-xl px-3 py-3 text-left text-sm font-semibold transition hover:-translate-y-0.5 ${
+                    selectedTradeId === trade.id
+                      ? "bg-[var(--accent)] text-white shadow-[0_8px_22px_rgba(110,17,17,0.22)]"
+                      : "bg-white text-[var(--text-primary)] hover:bg-white hover:shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate">
+                      #{index + 1} · {trade.strategy || "No Strategy"} · {trade.pair}
+                    </span>
+                    <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[11px]">
+                      {progress}%
+                    </span>
+                  </span>
+
+                  <span className="block pt-1 text-xs opacity-75">
+                    {trade.environment || "N/A"} · {trade.result || "N/A"} · {formatPnl(trade.pnl)} · {trade.trade_date}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

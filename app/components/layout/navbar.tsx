@@ -16,7 +16,7 @@ const links = [
 
 function WorkspaceTransitionLoader({ label }: { label: string }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[64px] z-40 flex items-center justify-center bg-[var(--background)] text-[var(--text-primary)] lg:top-[72px]">
+    <div className="fixed inset-x-0 bottom-0 top-[72px] z-40 flex items-center justify-center bg-[var(--background)] text-[var(--text-primary)]">
       <div className="flex flex-col items-center px-6 text-center">
         <div className="h-9 w-9 animate-spin rounded-full border-4 border-[#efeee9] border-t-[var(--accent)]" />
         <p className="mt-5 text-sm font-medium text-[var(--text-secondary)]">
@@ -61,7 +61,7 @@ function NavbarInner({
       hideTimerRef.current = setTimeout(() => {
         setPendingHref(null);
         setShowTransitionLoader(false);
-      }, 700);
+      }, 650);
     }
   }, [pathname, pendingHref]);
 
@@ -80,14 +80,14 @@ function NavbarInner({
     window.location.href = "/";
   };
 
-  const handleNavClick = (href: string, e: MouseEvent<HTMLAnchorElement>) => {
+  const handleNavigate = (href: string, event: MouseEvent<HTMLAnchorElement>) => {
     if (pathname === href) return;
 
     if (hasUnsavedChanges) {
       const leave = confirm("You have unsaved changes. Leave without saving?");
 
       if (!leave) {
-        e.preventDefault();
+        event.preventDefault();
         setPendingHref(null);
         setShowTransitionLoader(false);
         return;
@@ -102,24 +102,15 @@ function NavbarInner({
     setShowTransitionLoader(true);
   };
 
-  const navLinkClass = (active: boolean, compact = false) =>
-    active
-      ? `rounded-xl bg-[var(--accent)] font-bold text-white shadow-[0_6px_18px_rgba(110,17,17,0.18)] transition ${
-          compact ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm"
-        }`
-      : `rounded-xl font-bold text-[var(--text-secondary)] transition hover:bg-black/[0.03] hover:text-[var(--text-primary)] ${
-          compact ? "px-4 py-2 text-sm" : "px-5 py-2.5 text-sm"
-        }`;
-
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[64px] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:h-[72px] lg:grid lg:grid-cols-[auto_1fr_auto] lg:px-10">
-          <div className="min-w-0 justify-self-start">
+        <div className="mx-auto grid min-h-[66px] max-w-[1600px] grid-cols-[auto_auto] items-center gap-4 px-4 py-3 sm:px-6 lg:grid-cols-[auto_1fr_auto] lg:px-10">
+          <div className="justify-self-start">
             <Logo href="/dashboard" />
           </div>
 
-          <nav className="hidden items-center justify-center gap-3 text-sm lg:flex">
+          <nav className="hidden items-center justify-center gap-4 text-sm lg:flex">
             {links.map((link) => {
               const active = pendingHref
                 ? pendingHref === link.href
@@ -137,9 +128,13 @@ function NavbarInner({
                   prefetch
                   onMouseEnter={() => router.prefetch(link.href)}
                   onFocus={() => router.prefetch(link.href)}
-                  onClick={(e) => handleNavClick(link.href, e)}
+                  onClick={(event) => handleNavigate(link.href, event)}
                   aria-current={active ? "page" : undefined}
-                  className={navLinkClass(active)}
+                  className={
+                    active
+                      ? "rounded-xl bg-[var(--accent)] px-5 py-2.5 font-medium text-white shadow-[0_6px_18px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(110,17,17,0.24)]"
+                      : "rounded-xl px-5 py-2.5 font-medium text-[var(--text-secondary)] transition hover:-translate-y-0.5 hover:bg-black/[0.03] hover:text-[var(--text-primary)]"
+                  }
                 >
                   {label}
                 </Link>
@@ -150,52 +145,55 @@ function NavbarInner({
           <button
             type="button"
             onClick={handleLogout}
-            className="hidden justify-self-end rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] lg:block"
+            className="hidden justify-self-end rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent)] lg:block"
           >
             Logout
           </button>
 
-          <div className="relative lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((current) => !current)}
-              className="rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-extrabold text-[var(--text-primary)] shadow-[0_5px_15px_rgba(0,0,0,0.06)]"
-              aria-expanded={menuOpen}
-            >
-              Menu
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 top-12 z-50 w-[245px] rounded-2xl border border-[var(--border)] bg-white p-2 shadow-[0_18px_35px_rgba(0,0,0,0.12)]">
-                <div className="space-y-1">
-                  {links.map((link) => {
-                    const active = pathname === link.href;
-
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        prefetch
-                        onClick={(e) => handleNavClick(link.href, e)}
-                        className={`block w-full text-center ${navLinkClass(active, true)}`}
-                      >
-                        {link.label}
-                      </Link>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="block w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-center text-sm font-bold text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((current) => !current)}
+            className="justify-self-end rounded-2xl border border-[var(--border)] bg-white px-5 py-3 text-base font-black text-[var(--text-primary)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent)] lg:hidden"
+          >
+            Menu
+          </button>
         </div>
+
+        {menuOpen && (
+          <div className="border-t border-[var(--border)] bg-white px-4 py-3 lg:hidden">
+            <div className="mx-auto grid max-w-md gap-2">
+              {links.map((link) => {
+                const active = pendingHref
+                  ? pendingHref === link.href
+                  : pathname === link.href;
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    prefetch
+                    onClick={(event) => handleNavigate(link.href, event)}
+                    className={
+                      active
+                        ? "rounded-2xl bg-[var(--accent)] px-4 py-3 text-center text-sm font-black text-white shadow-[0_10px_24px_rgba(110,17,17,0.18)]"
+                        : "rounded-2xl bg-[#f4f2ee] px-4 py-3 text-center text-sm font-black text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
+                    }
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-black text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {showTransitionLoader ? (

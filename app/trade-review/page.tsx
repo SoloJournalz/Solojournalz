@@ -14,7 +14,6 @@ import { calculateTradeMetrics } from "@/types/trade";
 
 import TradeReviewTradeList from "./components/TradeReviewTradeList";
 import TradeDetailsForm from "../trade-log/components/TradeDetailsForm";
-import TradeChecklist from "../trade-log/components/TradeChecklist";
 import TradeNotes from "../trade-log/components/TradeNotes";
 import PsychologyPanel from "../trade-log/components/PsychologyPanel";
 
@@ -82,22 +81,16 @@ const phaseScreenshotConfig: {
   helper: string;
 }[] = [
   {
-    phase: "PHASE_1",
-    title: "Setup screenshot",
-    expertOnly: true,
-    helper: "Pre-entry context before the trade triggers.",
-  },
-  {
     phase: "PHASE_2",
     title: "Execution screenshot",
     expertOnly: true,
-    helper: "Trade management while the position is active.",
+    helper: "Expert only. Capture the trade management while the position is active.",
   },
   {
     phase: "PHASE_3",
     title: "Review screenshot",
     expertOnly: false,
-    helper: "Post-trade outcome and reflection.",
+    helper: "Free and Expert. Add the post-trade outcome screenshot before completing the review.",
   },
 ];
 
@@ -118,12 +111,6 @@ const getProgress = (trade: Trade | null | undefined): TradeProgressPercent => {
   }
 
   return 30;
-};
-
-const getProgressLabel = (progress: TradeProgressPercent) => {
-  if (progress === 100) return "Phase 3 · 100% Reviewed";
-  if (progress === 60) return "Phase 2 · 60% Execution Added";
-  return "Phase 1 · 30% Captured";
 };
 
 const createFormFromTrade = (
@@ -185,7 +172,7 @@ function ScreenshotSlot({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-3">
+    <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 shadow-[0_4px_16px_rgba(0,0,0,0.03)]">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold tracking-tight">{title}</h3>
@@ -204,7 +191,7 @@ function ScreenshotSlot({
       <div
         tabIndex={locked ? -1 : 0}
         onPaste={locked ? undefined : onPaste}
-        className="relative flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white p-3 text-center text-xs font-semibold text-[var(--text-secondary)] outline-none focus:ring-2 focus:ring-[var(--accent)]/20 lg:h-44"
+        className="relative flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-72"
       >
         {screenshot ? (
           <a
@@ -228,7 +215,7 @@ function ScreenshotSlot({
             type="button"
             disabled={saving}
             onClick={onCapture}
-            className="absolute bottom-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--accent)] text-lg font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.2)] disabled:opacity-60"
+            className="absolute bottom-4 left-4 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-xl font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.26)] disabled:opacity-60"
             aria-label={`Add ${title}`}
           >
             +
@@ -240,7 +227,7 @@ function ScreenshotSlot({
             type="button"
             disabled={saving}
             onClick={onDelete}
-            className="absolute bottom-4 right-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-[var(--accent)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] disabled:opacity-60"
+            className="absolute bottom-4 right-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-[var(--accent)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:bg-[var(--accent)] hover:text-white disabled:opacity-60"
           >
             Delete
           </button>
@@ -254,7 +241,6 @@ function TradeReviewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tradeParam = searchParams.get("trade");
-  const phaseParam = searchParams.get("phase");
 
   const [trades, setTrades] = useState<Trade[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
@@ -269,6 +255,7 @@ function TradeReviewPageContent() {
   const [saving, setSaving] = useState(false);
   const [screenshotSaving, setScreenshotSaving] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
+  const [activePhase, setActivePhase] = useState<"PHASE_2" | "PHASE_3">("PHASE_2");
 
   const fetchScreenshots = async (tradeId: string) => {
     const { data, error } = await supabase
@@ -367,6 +354,7 @@ function TradeReviewPageContent() {
 
     setSelectedTrade(selected);
     setForm(selected ? createFormFromTrade(selected, loadedSettings, resolvedPlan) : null);
+    setActivePhase(getProgress(selected) >= 60 ? "PHASE_3" : "PHASE_2");
 
     if (selected) {
       await fetchScreenshots(selected.id);
@@ -384,8 +372,8 @@ function TradeReviewPageContent() {
   const selectTrade = async (trade: Trade) => {
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
-    const progress = getProgress(trade);
-    router.replace(`/trade-review?trade=${trade.id}&phase=${progress >= 60 ? "3" : "2"}`);
+    setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
+    router.replace(`/trade-review?trade=${trade.id}`);
     await fetchScreenshots(trade.id);
   };
 
@@ -497,8 +485,8 @@ function TradeReviewPageContent() {
       return;
     }
 
-    router.replace(`/trade-review?trade=${selectedTrade.id}&phase=3`);
     await fetchTrades();
+    setActivePhase("PHASE_3");
     setSaving(false);
   };
 
@@ -660,7 +648,6 @@ function TradeReviewPageContent() {
   };
 
   const selectedProgress = getProgress(selectedTrade);
-  const activePhase = phaseParam === "2" ? "2" : phaseParam === "3" ? "3" : selectedProgress >= 60 ? "3" : "2";
   const screenshotsByPhase = Object.fromEntries(
     screenshots.map((screenshot) => [screenshot.phase || "PHASE_3", screenshot]),
   ) as Partial<Record<ScreenshotPhase, TradeScreenshot>>;
@@ -670,178 +657,195 @@ function TradeReviewPageContent() {
   }
 
   return (
-    <main className="h-[100dvh] overflow-hidden bg-[var(--background)] text-[var(--text-primary)]">
+    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] md:h-screen md:overflow-hidden">
       <Navbar />
 
-      <section className="mx-auto flex h-[calc(100dvh-64px)] max-w-7xl flex-col gap-3 px-3 py-3 sm:px-5 lg:h-[calc(100dvh-72px)] lg:py-4">
-        <div className="shrink-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--accent)] sm:text-xs">
+      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:h-[calc(100vh-73px)] md:overflow-hidden md:py-4">
+        <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] md:p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
             Trade Review Workspace
           </p>
-          <h1 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">
-            Complete one phase at a time
-          </h1>
-          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)] sm:text-sm">
-            Select a saved trade, finish Phase 2 execution, then unlock Phase 3 review.
-          </p>
+          <div className="mt-1 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight md:text-[26px]">
+                Complete one phase at a time
+              </h1>
+              <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+                Select a saved trade, finish Phase 2 execution, then complete Phase 3 review.
+              </p>
+            </div>
+            <span className="w-fit rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
+              {selectedTrade ? `${selectedProgress}% complete` : "Select trade"}
+            </span>
+          </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[0.78fr_1.22fr]">
-          <div className="min-h-0 overflow-hidden">
-            <TradeReviewTradeList
-              trades={filteredTrades || []}
-              selectedTradeId={selectedTrade?.id}
-              loading={loading}
-              search={search}
-              filter={filter}
-              environmentFilter={environmentFilter}
-              onSearchChange={setSearch}
-              onFilterChange={setFilter}
-              onEnvironmentFilterChange={setEnvironmentFilter}
-              onSelectTrade={(trade) => selectTrade(trade as Trade)}
-              onDeleteTrade={deleteSelectedTrade}
-            />
-          </div>
+        <div className="grid gap-3 md:h-[calc(100%-112px)] md:min-h-0 md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
+          <TradeReviewTradeList
+            trades={filteredTrades || []}
+            selectedTradeId={selectedTrade?.id}
+            loading={loading}
+            search={search}
+            filter={filter}
+            environmentFilter={environmentFilter}
+            onSearchChange={setSearch}
+            onFilterChange={setFilter}
+            onEnvironmentFilterChange={setEnvironmentFilter}
+            onSelectTrade={(trade) => selectTrade(trade as Trade)}
+            onDeleteTrade={deleteSelectedTrade}
+          />
 
-          <div className="min-h-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-4 lg:p-5">
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5 md:min-h-0 md:overflow-hidden">
             {!selectedTrade || !form ? (
-              <div className="flex h-full items-center justify-center rounded-2xl border border-[var(--border)] bg-[#efeee9] text-sm font-semibold text-[var(--text-secondary)]">
+              <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[#efeee9] text-sm font-semibold text-[var(--text-secondary)] md:h-full md:min-h-0">
                 Select a trade to review.
               </div>
             ) : (
-              <div className="flex h-full min-h-0 flex-col gap-3">
-                <div className="shrink-0">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--accent)] sm:text-xs">
-                        {activePhase === "2" ? "Phase 2 · Execution" : "Phase 3 · Review"}
-                      </p>
-                      <h2 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">
-                        {activePhase === "2" ? "Complete execution details" : "Complete final review"}
-                      </h2>
-                    </div>
-
-                    <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
-                      {selectedProgress}%
-                    </span>
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
+                      {activePhase === "PHASE_2" ? "Phase 2 · Execution" : "Phase 3 · Review"}
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
+                      {activePhase === "PHASE_2" ? "Execution details" : "Review and reflection"}
+                    </h2>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-[#efeee9] p-1">
+                  <div className="grid grid-cols-2 rounded-2xl bg-[#efeee9] p-1 text-sm font-black text-[var(--text-secondary)] lg:w-[340px]">
                     <button
                       type="button"
-                      onClick={() => router.replace(`/trade-review?trade=${selectedTrade.id}&phase=2`)}
-                      className={`rounded-xl px-3 py-2 text-sm font-bold ${activePhase === "2" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"}`}
+                      onClick={() => setActivePhase("PHASE_2")}
+                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 ${
+                        activePhase === "PHASE_2"
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
+                          : "hover:text-[var(--accent)]"
+                      }`}
                     >
                       Phase 2
                     </button>
                     <button
                       type="button"
+                      onClick={() => setActivePhase("PHASE_3")}
                       disabled={selectedProgress < 60}
-                      onClick={() => router.replace(`/trade-review?trade=${selectedTrade.id}&phase=3`)}
-                      className={`rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-40 ${activePhase === "3" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"}`}
+                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                        activePhase === "PHASE_3"
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
+                          : "hover:text-[var(--accent)]"
+                      }`}
                     >
                       Phase 3
                     </button>
                   </div>
                 </div>
 
-                {activePhase === "2" ? (
-                  <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[1fr_0.58fr]">
-                    <div className="min-h-0 overflow-hidden">
-                      <TradeDetailsForm
-                        form={form}
-                        settings={settings}
-                        isEditMode
-                        mode="execution"
-                        onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
-                        updateForm={updateForm}
-                        updateNumber={updateNumber}
-                      />
-                    </div>
+                <div className="h-2 shrink-0 overflow-hidden rounded-full bg-[#efeee9]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)] transition-all"
+                    style={{ width: `${selectedProgress}%` }}
+                  />
+                </div>
 
-                    <div className="min-h-0 space-y-3 overflow-hidden">
-                      {currentPlan === "EXPERT" ? (
-                        <ScreenshotSlot
-                          title="Execution screenshot"
-                          helper="Capture the trade management stage."
-                          screenshot={screenshotsByPhase.PHASE_2}
-                          locked={false}
-                          saving={screenshotSaving}
-                          onCapture={() => captureScreenshot("PHASE_2")}
-                          onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
-                          onDelete={() => deleteScreenshot("PHASE_2")}
+                <div className="mt-3 min-h-0 flex-1 md:overflow-hidden">
+                  {activePhase === "PHASE_2" ? (
+                    <div className="grid gap-3 md:h-full md:min-h-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+                      <div className="md:min-h-0 md:overflow-hidden">
+                        <TradeDetailsForm
+                          form={form}
+                          settings={settings}
+                          isEditMode
+                          mode="execution"
+                          onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
+                          updateForm={updateForm}
+                          updateNumber={updateNumber}
                         />
-                      ) : (
-                        <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 text-sm font-semibold text-[var(--text-secondary)]">
-                          Free plan: execution screenshots are hidden. Add your review screenshot in Phase 3.
+                      </div>
+
+                      <div className="flex flex-col gap-3 md:min-h-0">
+                        {currentPlan === "EXPERT" ? (
+                          <ScreenshotSlot
+                            title={phaseScreenshotConfig[0].title}
+                            helper={phaseScreenshotConfig[0].helper}
+                            screenshot={screenshotsByPhase.PHASE_2}
+                            locked={false}
+                            saving={screenshotSaving}
+                            onCapture={() => captureScreenshot("PHASE_2")}
+                            onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
+                            onDelete={() => deleteScreenshot("PHASE_2")}
+                          />
+                        ) : (
+                          <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 text-sm font-semibold text-[var(--text-secondary)]">
+                            Free plan keeps screenshots for Phase 3 review only. Execution screenshots unlock with Expert.
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={savePhase2}
+                          className="mt-auto rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
+                        >
+                          {saving ? "Saving..." : "Save Phase 2 · 60%"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="md:h-full md:min-h-0 md:overflow-y-auto md:pr-1">
+                      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
+                        <div className="space-y-3">
+                          {PLANS[currentPlan].psychologyTracking && (
+                            <PsychologyPanel
+                              emotions={settings.emotions}
+                              selectedEmotions={form.emotions}
+                              onSelect={setEmotion}
+                            />
+                          )}
+
+                          <TradeNotes
+                            value={form.notes ?? ""}
+                            onChange={(value) => updateForm("notes", value)}
+                          />
                         </div>
-                      )}
 
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={savePhase2}
-                        className="w-full rounded-2xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60"
-                      >
-                        {saving ? "Saving..." : "Save Phase 2 · 60%"}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[0.82fr_1.18fr]">
-                    <div className="min-h-0 space-y-3 overflow-hidden">
-                      <ScreenshotSlot
-                        title="Review screenshot"
-                        helper="Post-trade outcome and reflection."
-                        screenshot={screenshotsByPhase.PHASE_3}
-                        locked={false}
-                        saving={screenshotSaving}
-                        onCapture={() => captureScreenshot("PHASE_3")}
-                        onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
-                        onDelete={() => deleteScreenshot("PHASE_3")}
-                      />
+                        <div className="space-y-3">
+                          <ScreenshotSlot
+                            title={phaseScreenshotConfig[1].title}
+                            helper={phaseScreenshotConfig[1].helper}
+                            screenshot={screenshotsByPhase.PHASE_3}
+                            locked={false}
+                            saving={screenshotSaving}
+                            onCapture={() => captureScreenshot("PHASE_3")}
+                            onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
+                            onDelete={() => deleteScreenshot("PHASE_3")}
+                          />
 
-                      {currentPlan === "EXPERT" && (
-                        <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-3 text-xs font-semibold text-[var(--text-secondary)]">
-                          Expert trade story: setup screenshot in Phase 1, execution screenshot in Phase 2, review screenshot here.
+                          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm font-semibold text-[var(--text-secondary)]">
+                              {selectedTrade.result || "BE"} · {formatPnl(selectedTrade.pnl)} · {selectedTrade.trade_date}
+                            </p>
+
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={savePhase3}
+                              className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
+                            >
+                              {saving ? "Saving..." : "Complete Review · 100%"}
+                            </button>
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
-
-                    <div className="min-h-0 space-y-3 overflow-hidden">
-                      {PLANS[currentPlan].psychologyTracking && (
-                        <PsychologyPanel
-                          emotions={settings.emotions}
-                          selectedEmotions={form.emotions}
-                          onSelect={setEmotion}
-                        />
-                      )}
-
-                      <TradeNotes
-                        value={form.notes ?? ""}
-                        onChange={(value) => updateForm("notes", value)}
-                      />
-
-                      <button
-                        type="button"
-                        disabled={saving}
-                        onClick={savePhase3}
-                        className="w-full rounded-2xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60"
-                      >
-                        {saving ? "Saving..." : "Complete Review · 100%"}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
-          </div>
+          </section>
         </div>
       </section>
     </main>
   );
 }
-
 
 export default function TradeReviewPage() {
   return (
