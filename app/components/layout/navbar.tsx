@@ -153,15 +153,15 @@ function NavbarInner({
           <button
             type="button"
             onClick={() => setMenuOpen((current) => !current)}
-            className="justify-self-end rounded-2xl border border-[var(--border)] bg-white px-5 py-3 text-base font-black text-[var(--text-primary)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent)] lg:hidden"
+            className="justify-self-end rounded-xl border border-[var(--border)] bg-white px-3.5 py-2 text-sm font-black text-[var(--text-primary)] shadow-[0_6px_16px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent)] lg:hidden"
           >
             Menu
           </button>
         </div>
 
         {menuOpen && (
-          <div className="border-t border-[var(--border)] bg-white px-4 py-3 lg:hidden">
-            <div className="mx-auto grid max-w-md gap-2">
+          <div className="border-t border-[var(--border)] bg-white px-4 py-2 lg:hidden">
+            <div className="mx-auto grid max-w-sm gap-1.5">
               {links.map((link) => {
                 const active = pendingHref
                   ? pendingHref === link.href
@@ -175,8 +175,8 @@ function NavbarInner({
                     onClick={(event) => handleNavigate(link.href, event)}
                     className={
                       active
-                        ? "rounded-2xl bg-[var(--accent)] px-4 py-3 text-center text-sm font-black text-white shadow-[0_10px_24px_rgba(110,17,17,0.18)]"
-                        : "rounded-2xl bg-[#f4f2ee] px-4 py-3 text-center text-sm font-black text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
+                        ? "rounded-xl bg-[var(--accent)] px-3 py-2 text-center text-sm font-black text-white shadow-[0_10px_24px_rgba(110,17,17,0.18)]"
+                        : "rounded-xl bg-[#f4f2ee] px-3 py-2 text-center text-sm font-black text-[var(--text-secondary)] transition hover:text-[var(--accent)]"
                     }
                   >
                     {link.label}
@@ -187,7 +187,7 @@ function NavbarInner({
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-black text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm font-black text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 Logout
               </button>

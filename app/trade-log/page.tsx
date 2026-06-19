@@ -11,8 +11,6 @@ import type { TradeFormData } from "@/types/trade";
 
 import TradeDetailsForm from "./components/TradeDetailsForm";
 import SaveTradeBar from "./components/SaveTradeBar";
-import TradeChecklist from "./components/TradeChecklist";
-import PsychologyPanel from "./components/PsychologyPanel";
 
 type UserTradeSettings = {
   environments: string[];
@@ -44,8 +42,17 @@ const getCurrentTime = () => {
   ).padStart(2, "0")}`;
 };
 
+const limitChecklistForPlan = (
+  checklist: Record<string, boolean>,
+  plan: PlanKey,
+) =>
+  Object.fromEntries(
+    Object.entries(checklist).slice(0, PLANS[plan].checklistItems),
+  );
+
 const createInitialForm = (
   settings: UserTradeSettings = fallbackSettings,
+  plan: PlanKey = "FREE",
 ): TradeFormData => ({
   trade_date: getToday(),
   entry_time: getCurrentTime(),
@@ -65,8 +72,10 @@ const createInitialForm = (
   pnl: 0,
   result: "BE",
   notes: "",
-  checklist: settings.checklist || {},
-  emotions: [],
+  checklist: limitChecklistForPlan(settings.checklist || {}, plan),
+  emotions: PLANS[plan].psychologyTracking
+    ? [settings.emotions[0] || "focused"]
+    : [],
   progress_percent: 30,
 });
 
@@ -157,7 +166,7 @@ function TradeLogPageContent() {
         : fallbackSettings;
 
       setSettings(loadedSettings);
-      setForm(createInitialForm(loadedSettings));
+      setForm(createInitialForm(loadedSettings, resolvedPlan));
       setHasUnsavedChanges(false);
       setSavedTradeId(null);
       setLoading(false);
@@ -182,7 +191,7 @@ function TradeLogPageContent() {
   }, [hasUnsavedChanges]);
 
   const resetTradeLog = () => {
-    setForm(createInitialForm(settings));
+    setForm(createInitialForm(settings, currentPlan));
     setHasUnsavedChanges(false);
     setSaveError("");
     setSavedTradeId(null);
@@ -201,7 +210,7 @@ function TradeLogPageContent() {
     markDirty();
   };
 
-  const toggleChecklist = (key: keyof TradeFormData["checklist"]) => {
+  const toggleChecklist = (key: string) => {
     setForm((current) => ({
       ...current,
       checklist: {
@@ -209,6 +218,7 @@ function TradeLogPageContent() {
         [key]: !current.checklist[key],
       },
     }));
+
     markDirty();
   };
 
@@ -275,7 +285,7 @@ function TradeLogPageContent() {
       trade_type: form.trade_type || null,
       direction: form.direction,
       entry_price: form.entry_price || null,
-      checklist: form.checklist,
+      checklist: limitChecklistForPlan(form.checklist, latestPlan),
       emotions: PLANS[latestPlan].psychologyTracking ? form.emotions : [],
       progress_percent: 30,
     };
@@ -308,62 +318,95 @@ function TradeLogPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] md:h-screen md:overflow-hidden">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-6xl px-4 py-4 sm:px-5 md:py-5">
+      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:h-[calc(100vh-73px)] md:overflow-hidden md:py-4">
         <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-                Phase 1 · 30% Capture
-              </p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight">
-                Fast Trade Log
-              </h1>
-              <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
-                Capture the setup quickly. Phase 2 execution and Phase 3 review happen in Trade Review.
-              </p>
-            </div>
-            <span className="w-fit rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
-              30% setup
-            </span>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#efeee9]">
-            <div className="h-full w-[30%] rounded-full bg-[var(--accent)]" />
-          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Phase 1 · 30% Capture
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight">
+            Fast Trade Log
+          </h1>
+          <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+            Capture the setup quickly. Execution, screenshots, and final review happen in Trade Review.
+          </p>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <TradeDetailsForm
-            form={form}
-            settings={settings}
-            isEditMode={false}
-            mode="capture"
-            onReset={resetTradeLog}
-            updateForm={updateForm}
-            updateNumber={updateNumber}
-          />
+        <TradeDetailsForm
+          form={form}
+          settings={settings}
+          isEditMode={false}
+          mode="capture"
+          onReset={resetTradeLog}
+          updateForm={updateForm}
+          updateNumber={updateNumber}
+        />
 
-          <div className="space-y-3">
-            <TradeChecklist
-              checklist={form.checklist}
-              onToggle={toggleChecklist}
-              limitLabel={`${Object.keys(form.checklist).length}/${PLANS[currentPlan].checklistItems}`}
-            />
-
-            {PLANS[currentPlan].psychologyTracking ? (
-              <PsychologyPanel
-                emotions={settings.emotions}
-                selectedEmotions={form.emotions}
-                onSelect={setEmotion}
-              />
-            ) : (
-              <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 text-sm font-semibold text-[var(--text-secondary)]">
-                Psychology capture unlocks with Expert. Your checklist is still saved with this setup.
+        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+                  Phase 1 checklist
+                </p>
+                <h2 className="mt-1 text-lg font-bold tracking-tight">Pre-trade checklist</h2>
               </div>
-            )}
-          </div>
+              <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
+                {Object.values(form.checklist).filter(Boolean).length}/{Object.keys(form.checklist).length}
+              </span>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+              {Object.entries(form.checklist).map(([key, checked]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleChecklist(key)}
+                  className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2.5 text-left text-sm font-bold transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
+                >
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white text-xs text-[var(--accent)] ${
+                      checked ? "ring-2 ring-[var(--accent)]" : ""
+                    }`}
+                  >
+                    {checked ? "✓" : ""}
+                  </span>
+                  <span>{key.replaceAll("_", " ")}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {PLANS[currentPlan].psychologyTracking ? (
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+                Expert psychology
+              </p>
+              <h2 className="mt-1 text-lg font-bold tracking-tight">Entry emotion</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {settings.emotions.map((emotion) => {
+                  const active = form.emotions.includes(emotion);
+
+                  return (
+                    <button
+                      key={emotion}
+                      type="button"
+                      onClick={() => setEmotion(emotion)}
+                      className={`rounded-full px-3 py-2 text-xs font-black transition hover:-translate-y-0.5 ${
+                        active
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_18px_rgba(110,17,17,0.18)]"
+                          : "bg-[#efeee9] text-[var(--text-secondary)] hover:text-[var(--accent)]"
+                      }`}
+                    >
+                      {emotion}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
         </div>
 
         {saveError && (

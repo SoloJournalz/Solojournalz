@@ -152,6 +152,56 @@ const formatPnl = (value: number | null | undefined) => {
   return `P/L ${number}`;
 };
 
+function PreTradeChecklistCard({
+  checklist,
+}: {
+  checklist?: Record<string, boolean> | null;
+}) {
+  const entries = Object.entries(checklist || {});
+  const completed = entries.filter(([, checked]) => checked).length;
+
+  return (
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+            Phase 1
+          </p>
+          <h2 className="mt-1 text-lg font-bold tracking-tight">Pre-trade checklist</h2>
+        </div>
+
+        <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
+          {entries.length ? `${completed}/${entries.length}` : "N/A"}
+        </span>
+      </div>
+
+      {entries.length ? (
+        <div className="grid gap-2">
+          {entries.map(([key, checked]) => (
+            <div
+              key={key}
+              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-sm font-bold"
+            >
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white text-xs text-[var(--accent)] ${
+                  checked ? "ring-2 ring-[var(--accent)]" : ""
+                }`}
+              >
+                {checked ? "✓" : ""}
+              </span>
+              <span className="capitalize">{key.replaceAll("_", " ")}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-xl bg-[#efeee9] px-3 py-3 text-sm font-semibold text-[var(--text-secondary)]">
+          Select a saved trade to view its Phase 1 checklist.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function ScreenshotSlot({
   title,
   helper,
@@ -191,7 +241,7 @@ function ScreenshotSlot({
       <div
         tabIndex={locked ? -1 : 0}
         onPaste={locked ? undefined : onPaste}
-        className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:min-h-[420px] xl:min-h-[480px]"
+        className="relative flex h-72 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-[360px]"
       >
         {screenshot ? (
           <a
@@ -474,7 +524,7 @@ function TradeReviewPageContent() {
         risk_percent: metrics.risk_percent,
         rr: metrics.rr,
         result: form.result,
-        progress_percent: 60,
+        progress_percent: getProgress(selectedTrade) >= 60 ? getProgress(selectedTrade) : 60,
         updated_at: new Date().toISOString(),
       })
       .eq("id", selectedTrade.id);
@@ -660,7 +710,7 @@ function TradeReviewPageContent() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:py-5">
+      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:py-4">
         <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] md:p-5">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
             Trade Review Workspace
@@ -680,20 +730,24 @@ function TradeReviewPageContent() {
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
-          <TradeReviewTradeList
-            trades={filteredTrades || []}
-            selectedTradeId={selectedTrade?.id}
-            loading={loading}
-            search={search}
-            filter={filter}
-            environmentFilter={environmentFilter}
-            onSearchChange={setSearch}
-            onFilterChange={setFilter}
-            onEnvironmentFilterChange={setEnvironmentFilter}
-            onSelectTrade={(trade) => selectTrade(trade as Trade)}
-            onDeleteTrade={deleteSelectedTrade}
-          />
+        <div className="grid gap-3 md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
+          <aside className="space-y-3 md:sticky md:top-[88px] md:self-start">
+            <TradeReviewTradeList
+              trades={filteredTrades || []}
+              selectedTradeId={selectedTrade?.id}
+              loading={loading}
+              search={search}
+              filter={filter}
+              environmentFilter={environmentFilter}
+              onSearchChange={setSearch}
+              onFilterChange={setFilter}
+              onEnvironmentFilterChange={setEnvironmentFilter}
+              onSelectTrade={(trade) => selectTrade(trade as Trade)}
+              onDeleteTrade={deleteSelectedTrade}
+            />
+
+            <PreTradeChecklistCard checklist={selectedTrade?.checklist || form?.checklist} />
+          </aside>
 
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             {!selectedTrade || !form ? (
@@ -726,10 +780,7 @@ function TradeReviewPageContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (selectedProgress < 60) return;
-                        setActivePhase("PHASE_3");
-                      }}
+                      onClick={() => setActivePhase("PHASE_3")}
                       disabled={selectedProgress < 60}
                       className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
                         activePhase === "PHASE_3"
@@ -749,9 +800,9 @@ function TradeReviewPageContent() {
                   />
                 </div>
 
-                <div className="mt-3 space-y-4">
+                <div className="mt-3 flex-1">
                   {activePhase === "PHASE_2" ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <TradeDetailsForm
                         form={form}
                         settings={settings}
@@ -775,7 +826,7 @@ function TradeReviewPageContent() {
                         />
                       ) : (
                         <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)]">
-                          Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep the review screenshot in Phase 3.
+                          Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep screenshot capture for Phase 3 review.
                         </div>
                       )}
 
@@ -786,12 +837,12 @@ function TradeReviewPageContent() {
                           onClick={savePhase2}
                           className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
                         >
-                          {saving ? "Saving..." : "Save Phase 2 · 60%"}
+                          {saving ? "Saving..." : selectedProgress >= 60 ? "Save Changes" : "Save Phase 2"}
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {PLANS[currentPlan].psychologyTracking && (
                         <PsychologyPanel
                           emotions={settings.emotions}
@@ -827,7 +878,7 @@ function TradeReviewPageContent() {
                           onClick={savePhase3}
                           className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
                         >
-                          {saving ? "Saving..." : "Complete Trade · 100%"}
+                          {saving ? "Saving..." : selectedProgress >= 100 ? "Save Changes" : "Complete Trade"}
                         </button>
                       </div>
                     </div>
