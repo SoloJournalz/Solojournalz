@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/layout/navbar";
 import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
-import { PlanKey } from "@/lib/plans";
+import { PLANS, PlanKey } from "@/lib/plans";
 import { canCreateTrade, getCreatedAtForNewTrade, getCurrentUserPlan } from "@/lib/usage";
 import type { TradeFormData } from "@/types/trade";
 
 import TradeDetailsForm from "./components/TradeDetailsForm";
 import SaveTradeBar from "./components/SaveTradeBar";
+import TradeChecklist from "./components/TradeChecklist";
+import PsychologyPanel from "./components/PsychologyPanel";
 
 type UserTradeSettings = {
   environments: string[];
@@ -63,7 +65,7 @@ const createInitialForm = (
   pnl: 0,
   result: "BE",
   notes: "",
-  checklist: {},
+  checklist: settings.checklist || {},
   emotions: [],
   progress_percent: 30,
 });
@@ -199,6 +201,22 @@ function TradeLogPageContent() {
     markDirty();
   };
 
+  const toggleChecklist = (key: keyof TradeFormData["checklist"]) => {
+    setForm((current) => ({
+      ...current,
+      checklist: {
+        ...current.checklist,
+        [key]: !current.checklist[key],
+      },
+    }));
+    markDirty();
+  };
+
+  const setEmotion = (emotion: string) => {
+    setForm((current) => ({ ...current, emotions: [emotion] }));
+    markDirty();
+  };
+
   const handleSaveTrade = async () => {
     setSaveError("");
     setSaving(true);
@@ -257,6 +275,8 @@ function TradeLogPageContent() {
       trade_type: form.trade_type || null,
       direction: form.direction,
       entry_price: form.entry_price || null,
+      checklist: form.checklist,
+      emotions: PLANS[latestPlan].psychologyTracking ? form.emotions : [],
       progress_percent: 30,
     };
 
@@ -288,31 +308,63 @@ function TradeLogPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] md:h-screen md:overflow-hidden">
+    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:h-[calc(100vh-73px)] md:overflow-hidden md:py-4">
+      <section className="mx-auto max-w-6xl px-4 py-4 sm:px-5 md:py-5">
         <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Phase 1 · 30% Capture
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight">
-            Fast Trade Log
-          </h1>
-          <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
-            Capture the setup quickly. Execution, screenshots, and final review happen in Trade Review.
-          </p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+                Phase 1 · 30% Capture
+              </p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight">
+                Fast Trade Log
+              </h1>
+              <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+                Capture the setup quickly. Phase 2 execution and Phase 3 review happen in Trade Review.
+              </p>
+            </div>
+            <span className="w-fit rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
+              30% setup
+            </span>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#efeee9]">
+            <div className="h-full w-[30%] rounded-full bg-[var(--accent)]" />
+          </div>
         </div>
 
-        <TradeDetailsForm
-          form={form}
-          settings={settings}
-          isEditMode={false}
-          mode="capture"
-          onReset={resetTradeLog}
-          updateForm={updateForm}
-          updateNumber={updateNumber}
-        />
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <TradeDetailsForm
+            form={form}
+            settings={settings}
+            isEditMode={false}
+            mode="capture"
+            onReset={resetTradeLog}
+            updateForm={updateForm}
+            updateNumber={updateNumber}
+          />
+
+          <div className="space-y-3">
+            <TradeChecklist
+              checklist={form.checklist}
+              onToggle={toggleChecklist}
+              limitLabel={`${Object.keys(form.checklist).length}/${PLANS[currentPlan].checklistItems}`}
+            />
+
+            {PLANS[currentPlan].psychologyTracking ? (
+              <PsychologyPanel
+                emotions={settings.emotions}
+                selectedEmotions={form.emotions}
+                onSelect={setEmotion}
+              />
+            ) : (
+              <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 text-sm font-semibold text-[var(--text-secondary)]">
+                Psychology capture unlocks with Expert. Your checklist is still saved with this setup.
+              </div>
+            )}
+          </div>
+        </div>
 
         {saveError && (
           <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[#f8f6f2] p-4 text-sm font-semibold text-[var(--accent)] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">

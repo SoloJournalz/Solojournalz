@@ -191,7 +191,7 @@ function ScreenshotSlot({
       <div
         tabIndex={locked ? -1 : 0}
         onPaste={locked ? undefined : onPaste}
-        className="relative flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-72"
+        className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:min-h-[420px] xl:min-h-[480px]"
       >
         {screenshot ? (
           <a
@@ -657,10 +657,10 @@ function TradeReviewPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] md:h-screen md:overflow-hidden">
+    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:h-[calc(100vh-73px)] md:overflow-hidden md:py-4">
+      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:py-5">
         <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] md:p-5">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
             Trade Review Workspace
@@ -680,7 +680,7 @@ function TradeReviewPageContent() {
           </div>
         </div>
 
-        <div className="grid gap-3 md:h-[calc(100%-112px)] md:min-h-0 md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
+        <div className="grid gap-3 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
           <TradeReviewTradeList
             trades={filteredTrades || []}
             selectedTradeId={selectedTrade?.id}
@@ -695,13 +695,13 @@ function TradeReviewPageContent() {
             onDeleteTrade={deleteSelectedTrade}
           />
 
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5 md:min-h-0 md:overflow-hidden">
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             {!selectedTrade || !form ? (
               <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[#efeee9] text-sm font-semibold text-[var(--text-secondary)] md:h-full md:min-h-0">
                 Select a trade to review.
               </div>
             ) : (
-              <div className="flex h-full min-h-0 flex-col">
+              <div className="flex flex-col">
                 <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
@@ -726,7 +726,10 @@ function TradeReviewPageContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActivePhase("PHASE_3")}
+                      onClick={() => {
+                        if (selectedProgress < 60) return;
+                        setActivePhase("PHASE_3");
+                      }}
                       disabled={selectedProgress < 60}
                       className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
                         activePhase === "PHASE_3"
@@ -746,94 +749,86 @@ function TradeReviewPageContent() {
                   />
                 </div>
 
-                <div className="mt-3 min-h-0 flex-1 md:overflow-hidden">
+                <div className="mt-3 space-y-4">
                   {activePhase === "PHASE_2" ? (
-                    <div className="grid gap-3 md:h-full md:min-h-0 lg:grid-cols-[minmax(0,1fr)_360px]">
-                      <div className="md:min-h-0 md:overflow-hidden">
-                        <TradeDetailsForm
-                          form={form}
-                          settings={settings}
-                          isEditMode
-                          mode="execution"
-                          onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
-                          updateForm={updateForm}
-                          updateNumber={updateNumber}
+                    <div className="space-y-4">
+                      <TradeDetailsForm
+                        form={form}
+                        settings={settings}
+                        isEditMode
+                        mode="execution"
+                        onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
+                        updateForm={updateForm}
+                        updateNumber={updateNumber}
+                      />
+
+                      {currentPlan === "EXPERT" ? (
+                        <ScreenshotSlot
+                          title={phaseScreenshotConfig[0].title}
+                          helper={phaseScreenshotConfig[0].helper}
+                          screenshot={screenshotsByPhase.PHASE_2}
+                          locked={false}
+                          saving={screenshotSaving}
+                          onCapture={() => captureScreenshot("PHASE_2")}
+                          onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
+                          onDelete={() => deleteScreenshot("PHASE_2")}
                         />
-                      </div>
+                      ) : (
+                        <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)]">
+                          Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep the review screenshot in Phase 3.
+                        </div>
+                      )}
 
-                      <div className="flex flex-col gap-3 md:min-h-0">
-                        {currentPlan === "EXPERT" ? (
-                          <ScreenshotSlot
-                            title={phaseScreenshotConfig[0].title}
-                            helper={phaseScreenshotConfig[0].helper}
-                            screenshot={screenshotsByPhase.PHASE_2}
-                            locked={false}
-                            saving={screenshotSaving}
-                            onCapture={() => captureScreenshot("PHASE_2")}
-                            onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
-                            onDelete={() => deleteScreenshot("PHASE_2")}
-                          />
-                        ) : (
-                          <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 text-sm font-semibold text-[var(--text-secondary)]">
-                            Free plan keeps screenshots for Phase 3 review only. Execution screenshots unlock with Expert.
-                          </div>
-                        )}
-
+                      <div className="flex justify-end">
                         <button
                           type="button"
                           disabled={saving}
                           onClick={savePhase2}
-                          className="mt-auto rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
+                          className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
                         >
                           {saving ? "Saving..." : "Save Phase 2 · 60%"}
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="md:h-full md:min-h-0 md:overflow-y-auto md:pr-1">
-                      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
-                        <div className="space-y-3">
-                          {PLANS[currentPlan].psychologyTracking && (
-                            <PsychologyPanel
-                              emotions={settings.emotions}
-                              selectedEmotions={form.emotions}
-                              onSelect={setEmotion}
-                            />
-                          )}
+                    <div className="space-y-4">
+                      {PLANS[currentPlan].psychologyTracking && (
+                        <PsychologyPanel
+                          emotions={settings.emotions}
+                          selectedEmotions={form.emotions}
+                          onSelect={setEmotion}
+                        />
+                      )}
 
-                          <TradeNotes
-                            value={form.notes ?? ""}
-                            onChange={(value) => updateForm("notes", value)}
-                          />
-                        </div>
+                      <TradeNotes
+                        value={form.notes ?? ""}
+                        onChange={(value) => updateForm("notes", value)}
+                      />
 
-                        <div className="space-y-3">
-                          <ScreenshotSlot
-                            title={phaseScreenshotConfig[1].title}
-                            helper={phaseScreenshotConfig[1].helper}
-                            screenshot={screenshotsByPhase.PHASE_3}
-                            locked={false}
-                            saving={screenshotSaving}
-                            onCapture={() => captureScreenshot("PHASE_3")}
-                            onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
-                            onDelete={() => deleteScreenshot("PHASE_3")}
-                          />
+                      <ScreenshotSlot
+                        title={phaseScreenshotConfig[1].title}
+                        helper={phaseScreenshotConfig[1].helper}
+                        screenshot={screenshotsByPhase.PHASE_3}
+                        locked={false}
+                        saving={screenshotSaving}
+                        onCapture={() => captureScreenshot("PHASE_3")}
+                        onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
+                        onDelete={() => deleteScreenshot("PHASE_3")}
+                      />
 
-                          <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm font-semibold text-[var(--text-secondary)]">
-                              {selectedTrade.result || "BE"} · {formatPnl(selectedTrade.pnl)} · {selectedTrade.trade_date}
-                            </p>
+                      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-semibold text-[var(--text-secondary)]">
+                          {selectedTrade.result || "BE"} · {formatPnl(selectedTrade.pnl)} · {selectedTrade.trade_date}
+                        </p>
 
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={savePhase3}
-                              className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
-                            >
-                              {saving ? "Saving..." : "Complete Review · 100%"}
-                            </button>
-                          </div>
-                        </div>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={savePhase3}
+                          className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
+                        >
+                          {saving ? "Saving..." : "Complete Trade · 100%"}
+                        </button>
                       </div>
                     </div>
                   )}
