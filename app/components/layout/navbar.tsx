@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase/client";
 const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/trade-log", label: "Trade Log" },
-  { href: "/storage", label: "Storage" },
+  { href: "/trade-review", label: "Trade Review" },
   { href: "/settings", label: "Settings" },
 ];
 

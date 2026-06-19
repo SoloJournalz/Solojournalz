@@ -1,33 +1,16 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/layout/navbar";
 import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
-import {
-  PLANS,
-  PlanKey,
-  canAddScreenshotToTrade,
-  getScreenshotLimit,
-  getScreenshotLimitLabel,
-} from "@/lib/plans";
+import { PlanKey } from "@/lib/plans";
 import { canCreateTrade, getCreatedAtForNewTrade, getCurrentUserPlan } from "@/lib/usage";
 import type { TradeFormData } from "@/types/trade";
-import { calculateTradeMetrics } from "@/types/trade";
 
 import TradeDetailsForm from "./components/TradeDetailsForm";
-import ScreenshotPanel from "./components/ScreenshotPanel";
-import TradeChecklist from "./components/TradeChecklist";
-import TradeNotes from "./components/TradeNotes";
-import PsychologyPanel from "./components/PsychologyPanel";
 import SaveTradeBar from "./components/SaveTradeBar";
-
-type ScreenshotDraft = {
-  id?: string;
-  imageUrl: string;
-  isNew: boolean;
-};
 
 type UserTradeSettings = {
   environments: string[];
@@ -40,16 +23,12 @@ type UserTradeSettings = {
 };
 
 const fallbackSettings: UserTradeSettings = {
-  environments: ["LIVE", "TESTING", "BACKTESTING"],
+  environments: ["LIVE", "TESTING", "BACKTESTING", "CHALLENGE"],
   strategies: ["Breakout", "Reversal", "Continuation"],
   pairs: ["EUR/USD", "GBP/USD", "XAU/USD"],
   trade_types: ["Scalp", "Day Trade", "Swing"],
   emotions: ["calm", "focused", "anxious", "revenge", "tilt"],
-  checklist: {
-    a_plus_setup: true,
-    htf_bias_confirmed: false,
-    rr_greater_than_2: false,
-  },
+  checklist: {},
   notes_template: "",
 };
 
@@ -63,17 +42,8 @@ const getCurrentTime = () => {
   ).padStart(2, "0")}`;
 };
 
-const limitChecklistForPlan = (
-  checklist: Record<string, boolean>,
-  plan: PlanKey,
-) =>
-  Object.fromEntries(
-    Object.entries(checklist).slice(0, PLANS[plan].checklistItems),
-  );
-
 const createInitialForm = (
   settings: UserTradeSettings = fallbackSettings,
-  plan: PlanKey = "FREE",
 ): TradeFormData => ({
   trade_date: getToday(),
   entry_time: getCurrentTime(),
@@ -87,38 +57,33 @@ const createInitialForm = (
   position_size: 0,
   stop_loss: 0,
   take_profit: 0,
+  exit_price: 0,
   risk_percent: 0,
   rr: 0,
   pnl: 0,
   result: "BE",
-  notes: settings.notes_template || "",
-  checklist: limitChecklistForPlan(settings.checklist, plan),
-  emotions: PLANS[plan].psychologyTracking
-    ? [settings.emotions[0] || "focused"]
-    : [],
+  notes: "",
+  checklist: {},
+  emotions: [],
+  progress_percent: 30,
 });
 
 function TradeLogPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const editTradeId = searchParams.get("edit");
-  const isEditMode = Boolean(editTradeId);
 
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
   const [settings, setSettings] = useState<UserTradeSettings>(fallbackSettings);
-  const [form, setForm] = useState<TradeFormData>(
-    createInitialForm(fallbackSettings, "FREE"),
-  );
+  const [form, setForm] = useState<TradeFormData>(createInitialForm());
   const [saving, setSaving] = useState(false);
-  const [screenshots, setScreenshots] = useState<ScreenshotDraft[]>([]);
-  const [activeScreenshotIndex, setActiveScreenshotIndex] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [initialScreenshotIds, setInitialScreenshotIds] = useState<string[]>([]);
   const [saveError, setSaveError] = useState("");
+  const [savedTradeId, setSavedTradeId] = useState<string | null>(null);
 
-  const markDirty = () => setHasUnsavedChanges(true);
+  const markDirty = () => {
+    setHasUnsavedChanges(true);
+    setSavedTradeId(null);
+  };
 
   const updateForm = <K extends keyof TradeFormData>(
     key: K,
@@ -184,94 +149,20 @@ function TradeLogPageContent() {
             trade_types:
               settingsData.trade_types || fallbackSettings.trade_types,
             emotions: settingsData.emotions || fallbackSettings.emotions,
-            checklist: limitChecklistForPlan(
-              settingsData.checklist || fallbackSettings.checklist,
-              resolvedPlan,
-            ),
+            checklist: settingsData.checklist || fallbackSettings.checklist,
             notes_template: settingsData.notes_template || "",
           }
-        : {
-            ...fallbackSettings,
-            checklist: limitChecklistForPlan(
-              fallbackSettings.checklist,
-              resolvedPlan,
-            ),
-          };
+        : fallbackSettings;
 
       setSettings(loadedSettings);
-
-      if (!editTradeId) {
-        setForm(createInitialForm(loadedSettings, resolvedPlan));
-        setScreenshots([]);
-        setInitialScreenshotIds([]);
-        setActiveScreenshotIndex(0);
-        setHasUnsavedChanges(false);
-        setLoading(false);
-        return;
-      }
-
-      const { data: trade, error: tradeError } = await supabase
-        .from("trades")
-        .select("*")
-        .eq("id", editTradeId)
-        .single();
-
-      if (tradeError || !trade) {
-        alert(tradeError?.message || "Could not load trade.");
-        router.push("/storage");
-        setLoading(false);
-        return;
-      }
-
-      setForm({
-        trade_date: trade.trade_date || getToday(),
-        entry_time: trade.entry_time || getCurrentTime(),
-        environment: (trade.environment ||
-          "BACKTESTING") as TradeFormData["environment"],
-        pair: trade.pair || "",
-        strategy: trade.strategy || "",
-        trade_type: trade.trade_type || "",
-        direction: trade.direction || "BUY",
-        entry_price: trade.entry_price ?? 0,
-        position_size: trade.position_size ?? 0,
-        stop_loss: trade.stop_loss ?? 0,
-        take_profit: trade.take_profit ?? 0,
-        risk_percent: trade.risk_percent ?? 0,
-        rr: trade.rr ?? 0,
-        pnl: trade.pnl ?? 0,
-        result: trade.result || "BE",
-        notes: trade.notes || "",
-        checklist: limitChecklistForPlan(
-          trade.checklist || fallbackSettings.checklist,
-          resolvedPlan,
-        ),
-        emotions: PLANS[resolvedPlan].psychologyTracking
-          ? trade.emotions || [fallbackSettings.emotions[0]]
-          : [],
-      });
-
-      const { data: shotData } = await supabase
-        .from("trade_screenshots")
-        .select("*")
-        .eq("trade_id", editTradeId)
-        .order("created_at", { ascending: true });
-
-      const loadedScreenshots =
-        shotData?.map((shot) => ({
-          id: shot.id as string,
-          imageUrl: shot.image_url as string,
-          isNew: false,
-        })) || [];
-
-      setScreenshots(loadedScreenshots);
-      setInitialScreenshotIds(loadedScreenshots.map((s) => s.id!));
-      setActiveScreenshotIndex(0);
+      setForm(createInitialForm(loadedSettings));
       setHasUnsavedChanges(false);
+      setSavedTradeId(null);
       setLoading(false);
     };
 
     loadTradeLog();
-  }, [editTradeId, router]);
+  }, [router]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -289,179 +180,23 @@ function TradeLogPageContent() {
   }, [hasUnsavedChanges]);
 
   const resetTradeLog = () => {
-    setForm(createInitialForm(settings, currentPlan));
-    setScreenshots([]);
-    setInitialScreenshotIds([]);
-    setActiveScreenshotIndex(0);
+    setForm(createInitialForm(settings));
     setHasUnsavedChanges(false);
+    setSaveError("");
+    setSavedTradeId(null);
   };
 
   const updateNumber = (key: keyof TradeFormData, value: string) => {
     setForm((current) => {
       const nextValue = value === "" || value === "." ? 0 : Number(value);
 
-      const nextForm = {
+      return {
         ...current,
         [key]: Number.isFinite(nextValue) ? nextValue : 0,
       };
-
-      const metrics = calculateTradeMetrics(nextForm);
-
-      return {
-        ...nextForm,
-        risk_percent: metrics.risk_percent,
-        rr: metrics.rr,
-        pnl: key === "pnl" ? nextForm.pnl : current.pnl,
-      };
     });
 
     markDirty();
-  };
-
-  const showScreenshotLimitAlert = () => {
-    alert(
-      `${getScreenshotLimitLabel(currentPlan)} allowed on your current plan. Upgrade to Expert for unlimited screenshots.`,
-    );
-  };
-
-  const addScreenshotUrl = (imageUrl: string) => {
-    if (!canAddScreenshotToTrade(currentPlan, screenshots.length)) {
-      showScreenshotLimitAlert();
-      return;
-    }
-
-    setScreenshots((current) => {
-      if (!canAddScreenshotToTrade(currentPlan, current.length)) {
-        return current;
-      }
-
-      const nextScreenshots = [...current, { imageUrl, isNew: true }];
-      setActiveScreenshotIndex(nextScreenshots.length - 1);
-      return nextScreenshots;
-    });
-
-    markDirty();
-  };
-
-  const captureScreenshot = async () => {
-    if (!canAddScreenshotToTrade(currentPlan, screenshots.length)) {
-      showScreenshotLimitAlert();
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
-
-      const video = document.createElement("video");
-      video.srcObject = stream;
-      video.muted = true;
-      await video.play();
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Could not capture screenshot.");
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      stream.getTracks().forEach((track) => track.stop());
-
-      addScreenshotUrl(canvas.toDataURL("image/jpeg", 0.85));
-    } catch {
-      alert("Screenshot capture cancelled or blocked.");
-    }
-  };
-
-  const handlePasteScreenshot = (
-    event: React.ClipboardEvent<HTMLDivElement>,
-  ) => {
-    if (!canAddScreenshotToTrade(currentPlan, screenshots.length)) {
-      showScreenshotLimitAlert();
-      return;
-    }
-
-    const items = event.clipboardData.items;
-
-    for (const item of items) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (!file) return;
-
-        addScreenshotUrl(URL.createObjectURL(file));
-        return;
-      }
-    }
-  };
-
-  const deleteCurrentScreenshot = () => {
-    setScreenshots((current) => {
-      if (current.length === 0) return current;
-
-      const nextScreenshots = current.filter(
-        (_, index) => index !== activeScreenshotIndex,
-      );
-
-      setActiveScreenshotIndex((currentIndex) =>
-        Math.max(0, Math.min(currentIndex, nextScreenshots.length - 1)),
-      );
-
-      return nextScreenshots;
-    });
-
-    markDirty();
-  };
-
-  const toggleChecklist = (key: keyof TradeFormData["checklist"]) => {
-    setForm((current) => ({
-      ...current,
-      checklist: {
-        ...current.checklist,
-        [key]: !current.checklist[key],
-      },
-    }));
-
-    markDirty();
-  };
-
-  const setEmotion = (emotion: string) => {
-    setForm((current) => ({ ...current, emotions: [emotion] }));
-    markDirty();
-  };
-
-  const uploadScreenshot = async (
-    userId: string,
-    tradeId: string,
-    imageUrl: string,
-    index: number,
-  ) => {
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-
-    const filePath = `${userId}/${tradeId}/${index + 1}-${crypto.randomUUID()}.jpg`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("trade-screenshots")
-      .upload(filePath, blob, {
-        contentType: "image/jpeg",
-        upsert: false,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("trade-screenshots").getPublicUrl(filePath);
-
-    const { error: dbError } = await supabase.from("trade_screenshots").insert({
-      trade_id: tradeId,
-      image_url: publicUrl,
-    });
-
-    if (dbError) throw dbError;
   };
 
   const handleSaveTrade = async () => {
@@ -491,30 +226,26 @@ function TradeLogPageContent() {
       return;
     }
 
-    if (!isEditMode) {
-      try {
-        const usage = await canCreateTrade(user.id, latestPlan);
+    try {
+      const usage = await canCreateTrade(user.id, latestPlan);
 
-        if (!usage.allowed) {
-          setSaveError(
-            usage.message ||
-              "You’ve reached your monthly trade limit. Upgrade to Expert for unlimited trades.",
-          );
-          setSaving(false);
-          return;
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Could not check your monthly trade usage.";
-        setSaveError(message);
+      if (!usage.allowed) {
+        setSaveError(
+          usage.message ||
+            "You’ve reached your monthly trade limit. Upgrade to Expert for unlimited trades.",
+        );
         setSaving(false);
         return;
       }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not check your monthly trade usage.";
+      setSaveError(message);
+      setSaving(false);
+      return;
     }
-
-    const metrics = calculateTradeMetrics(form);
 
     const payload = {
       user_id: user.id,
@@ -525,63 +256,9 @@ function TradeLogPageContent() {
       strategy: form.strategy || null,
       trade_type: form.trade_type || null,
       direction: form.direction,
-      entry_price: form.entry_price,
-      position_size: form.position_size,
-      stop_loss: form.stop_loss,
-      take_profit: form.take_profit,
-      risk_percent: metrics.risk_percent,
-      rr: metrics.rr,
-      pnl: form.pnl ?? 0,
-      result: form.result,
-      notes: form.notes || null,
-      checklist: limitChecklistForPlan(form.checklist, latestPlan),
-      emotions: PLANS[latestPlan].psychologyTracking ? form.emotions : [],
+      entry_price: form.entry_price || null,
+      progress_percent: 30,
     };
-
-    if (isEditMode && editTradeId) {
-      const { error } = await supabase
-        .from("trades")
-        .update(payload)
-        .eq("id", editTradeId);
-
-      if (error) {
-        alert(error.message);
-        setSaving(false);
-        return;
-      }
-
-      const keptExistingIds = screenshots
-        .filter((s) => !s.isNew && s.id)
-        .map((s) => s.id!);
-
-      const deletedIds = initialScreenshotIds.filter(
-        (id) => !keptExistingIds.includes(id),
-      );
-
-      if (deletedIds.length > 0) {
-        await supabase.from("trade_screenshots").delete().in("id", deletedIds);
-      }
-
-      try {
-        await Promise.all(
-          screenshots
-            .filter((s) => s.isNew)
-            .map((screenshot, index) =>
-              uploadScreenshot(user.id, editTradeId, screenshot.imageUrl, index),
-            ),
-        );
-      } catch {
-        alert("Trade updated, but screenshot upload failed.");
-        setSaving(false);
-        return;
-      }
-
-      setSaving(false);
-      setHasUnsavedChanges(false);
-      alert("Trade updated successfully.");
-      router.push("/storage");
-      return;
-    }
 
     const simulatedCreatedAt = await getCreatedAtForNewTrade();
 
@@ -601,23 +278,9 @@ function TradeLogPageContent() {
       return;
     }
 
-    try {
-      await Promise.all(
-        screenshots
-          .map((screenshot, index) =>
-            uploadScreenshot(user.id, savedTrade.id, screenshot.imageUrl, index),
-          ),
-      );
-    } catch {
-      alert("Trade saved, but screenshot upload failed.");
-      setSaving(false);
-      return;
-    }
-
+    setSavedTradeId(savedTrade.id);
     setSaving(false);
     setHasUnsavedChanges(false);
-    alert("Trade saved successfully.");
-    resetTradeLog();
   };
 
   if (loading) {
@@ -628,48 +291,28 @@ function TradeLogPageContent() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-7xl px-5 py-5">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.25fr]">
-          <TradeDetailsForm
-            form={form}
-            settings={settings}
-            isEditMode={isEditMode}
-            onReset={resetTradeLog}
-            updateForm={updateForm}
-            updateNumber={updateNumber}
-          />
-
-          <ScreenshotPanel
-            screenshots={screenshots}
-            activeScreenshotIndex={activeScreenshotIndex}
-            maxScreenshots={getScreenshotLimit(currentPlan)}
-            onPaste={handlePasteScreenshot}
-            onCapture={captureScreenshot}
-            onDelete={deleteCurrentScreenshot}
-            onSelect={setActiveScreenshotIndex}
-          />
-
-          <TradeChecklist
-            checklist={form.checklist}
-            onToggle={toggleChecklist}
-            limitLabel={`${Object.keys(form.checklist).length}/${PLANS[currentPlan].checklistItems}`}
-          />
-
-          <section className="space-y-4">
-            <TradeNotes
-              value={form.notes ?? ""}
-              onChange={(value) => updateForm("notes", value)}
-            />
-
-            {PLANS[currentPlan].psychologyTracking && (
-              <PsychologyPanel
-                emotions={settings.emotions}
-                selectedEmotions={form.emotions}
-                onSelect={setEmotion}
-              />
-            )}
-          </section>
+      <section className="mx-auto max-w-5xl px-5 py-5">
+        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Phase 1 · 30% Capture
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">
+            Fast Trade Log
+          </h1>
+          <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
+            Capture only the entry details now. Execution, review, psychology, and screenshots happen in the Review Workspace.
+          </p>
         </div>
+
+        <TradeDetailsForm
+          form={form}
+          settings={settings}
+          isEditMode={false}
+          mode="capture"
+          onReset={resetTradeLog}
+          updateForm={updateForm}
+          updateNumber={updateNumber}
+        />
 
         {saveError && (
           <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[#f8f6f2] p-4 text-sm font-semibold text-[var(--accent)] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
@@ -677,13 +320,40 @@ function TradeLogPageContent() {
           </div>
         )}
 
-        <SaveTradeBar
-          isEditMode={isEditMode}
-          saving={saving}
-          hasUnsavedChanges={hasUnsavedChanges}
-          onCancel={() => router.push("/storage")}
-          onSave={handleSaveTrade}
-        />
+        {savedTradeId ? (
+          <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+            <h2 className="text-xl font-bold tracking-tight">Trade captured.</h2>
+            <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
+              This trade is saved at 30% completion.
+            </p>
+
+            <div className="mt-4 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={resetTradeLog}
+                className="rounded-2xl bg-[#efeee9] px-8 py-3 font-semibold text-[var(--text-secondary)]"
+              >
+                Go back to Trade Log
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push(`/trade-review?trade=${savedTradeId}`)}
+                className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)]"
+              >
+                Continue to Review this trade
+              </button>
+            </div>
+          </div>
+        ) : (
+          <SaveTradeBar
+            isEditMode={false}
+            saving={saving}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onCancel={resetTradeLog}
+            onSave={handleSaveTrade}
+          />
+        )}
       </section>
     </main>
   );

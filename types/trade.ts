@@ -1,12 +1,15 @@
-export type TradeEnvironment = "LIVE" | "TESTING" | "BACKTESTING";
+export type TradeEnvironment = "LIVE" | "TESTING" | "BACKTESTING" | "CHALLENGE";
 
 export type TradeDirection = "BUY" | "SELL";
 export type TradeResult = "WIN" | "LOSS" | "BE";
+export type TradeProgressPercent = 30 | 60 | 100;
+export type ScreenshotPhase = "PHASE_1" | "PHASE_2" | "PHASE_3";
 
 export type TradeScreenshot = {
   id: string;
   trade_id: string;
   image_url: string;
+  phase?: ScreenshotPhase | null;
   created_at: string;
 };
 
@@ -25,6 +28,7 @@ export type TradeFormData = {
   position_size?: number;
   stop_loss?: number;
   take_profit?: number;
+  exit_price?: number;
 
   risk_percent?: number;
   rr?: number;
@@ -35,6 +39,7 @@ export type TradeFormData = {
 
   checklist: Record<string, boolean>;
   emotions: string[];
+  progress_percent?: TradeProgressPercent;
 };
 
 export type TradeRecord = {
@@ -51,13 +56,16 @@ export type TradeRecord = {
   position_size: number | null;
   stop_loss: number | null;
   take_profit: number | null;
+  exit_price?: number | null;
   risk_percent: number | null;
   pnl: number | null;
   result: TradeResult | null;
   checklist: Record<string, boolean> | null;
   emotions: string[] | null;
   notes: string | null;
+  progress_percent?: TradeProgressPercent | null;
   created_at: string;
+  updated_at?: string | null;
 };
 
 const safeNumber = (value?: number) => {

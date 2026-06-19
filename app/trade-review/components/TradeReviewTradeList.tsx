@@ -1,6 +1,6 @@
 type Trade = {
   id: string;
-  environment: "LIVE" | "TESTING" | "BACKTESTING" | null;
+  environment: "LIVE" | "TESTING" | "BACKTESTING" | "CHALLENGE" | null;
   trade_date: string;
   pair: string;
   strategy: string | null;
@@ -9,7 +9,7 @@ type Trade = {
   created_at: string;
 };
 
-type StorageTradeListProps = {
+type TradeReviewTradeListProps = {
   trades?: Trade[];
   selectedTradeId?: string;
   loading: boolean;
@@ -35,7 +35,7 @@ const formatPnl = (value?: number | null) => {
   return `P/L ${number}`;
 };
 
-export default function StorageTradeList({
+export default function TradeReviewTradeList({
   trades = [],
   selectedTradeId,
   loading,
@@ -47,7 +47,7 @@ export default function StorageTradeList({
   onEnvironmentFilterChange,
   onSelectTrade,
   onDeleteTrade,
-}: StorageTradeListProps) {
+}: TradeReviewTradeListProps) {
   return (
     <section className={cardClass}>
       <h2 className="mb-4 text-xl font-bold tracking-tight">Trade Log</h2>
@@ -62,6 +62,7 @@ export default function StorageTradeList({
           <option value="LIVE">Live</option>
           <option value="TESTING">Testing</option>
           <option value="BACKTESTING">Backtesting</option>
+          <option value="CHALLENGE">Challenge</option>
         </select>
 
         <div className="grid grid-cols-[1fr_150px] gap-3">

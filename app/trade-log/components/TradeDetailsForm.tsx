@@ -16,6 +16,7 @@ type TradeDetailsFormProps = {
   form: TradeFormData;
   settings: UserTradeSettings;
   isEditMode: boolean;
+  mode?: "capture" | "full" | "execution";
   onReset: () => void;
   updateForm: <K extends keyof TradeFormData>(
     key: K,
@@ -33,6 +34,7 @@ export default function TradeDetailsForm({
   form,
   settings,
   isEditMode,
+  mode = "full",
   onReset,
   updateForm,
   updateNumber,
@@ -45,16 +47,22 @@ export default function TradeDetailsForm({
     setPositionSizeInput(toInputValue(form.position_size));
   }, [form.position_size]);
 
+  const showExecutionFields = mode === "full" || mode === "execution";
+
   return (
     <section
       onDoubleClick={() => {
-        if (isEditMode) return;
+        if (isEditMode || mode !== "capture") return;
         onReset();
       }}
       className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
     >
       <h2 className="mb-4 text-xl font-bold tracking-tight">
-        {isEditMode ? "Edit Trade Info" : "Trade Info"}
+        {mode === "capture"
+          ? "Entry Details"
+          : isEditMode
+            ? "Edit Execution Details"
+            : "Trade Info"}
       </h2>
 
       <div className="grid grid-cols-2 gap-3">
@@ -161,82 +169,98 @@ export default function TradeDetailsForm({
           />
         </Field>
 
-        <Field label="Position Size">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={positionSizeInput}
-            onChange={(e) => {
-              const value = e.target.value;
+        {showExecutionFields && (
+          <>
+            <Field label="Position Size">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={positionSizeInput}
+                onChange={(e) => {
+                  const value = e.target.value;
 
-              if (!/^\d*\.?\d*$/.test(value)) return;
+                  if (!/^\d*\.?\d*$/.test(value)) return;
 
-              setPositionSizeInput(value);
-              updateNumber("position_size", value);
-            }}
-            placeholder="0.01"
-            className="input"
-          />
-        </Field>
+                  setPositionSizeInput(value);
+                  updateNumber("position_size", value);
+                }}
+                placeholder="0.01"
+                className="input"
+              />
+            </Field>
 
-        <Field label="Stop Loss">
-          <input
-            type="number"
-            step="0.00001"
-            min="0"
-            value={toInputValue(form.stop_loss)}
-            onChange={(e) => updateNumber("stop_loss", e.target.value)}
-            placeholder="4434.831"
-            className="input"
-          />
-        </Field>
+            <Field label="Stop Loss">
+              <input
+                type="number"
+                step="0.00001"
+                min="0"
+                value={toInputValue(form.stop_loss)}
+                onChange={(e) => updateNumber("stop_loss", e.target.value)}
+                placeholder="4434.831"
+                className="input"
+              />
+            </Field>
 
-        <Field label="Take Profit">
-          <input
-            type="number"
-            step="0.00001"
-            min="0"
-            value={toInputValue(form.take_profit)}
-            onChange={(e) => updateNumber("take_profit", e.target.value)}
-            placeholder="4511.475"
-            className="input"
-          />
-        </Field>
+            <Field label="Take Profit">
+              <input
+                type="number"
+                step="0.00001"
+                min="0"
+                value={toInputValue(form.take_profit)}
+                onChange={(e) => updateNumber("take_profit", e.target.value)}
+                placeholder="4511.475"
+                className="input"
+              />
+            </Field>
 
-        <Field label="P/L">
-          <input
-            type="number"
-            step="0.01"
-            value={toInputValue(form.pnl)}
-            onChange={(e) => updateNumber("pnl", e.target.value)}
-            placeholder="25.50"
-            className="input"
-          />
-        </Field>
+            <Field label="Exit Price">
+              <input
+                type="number"
+                step="0.00001"
+                min="0"
+                value={toInputValue(form.exit_price)}
+                onChange={(e) => updateNumber("exit_price", e.target.value)}
+                placeholder="4480.000"
+                className="input"
+              />
+            </Field>
 
-        <Field label="Risk %">
-          <input
-            type="number"
-            value={form.risk_percent ? String(form.risk_percent) : ""}
-            readOnly
-            placeholder="Auto"
-            className="input cursor-not-allowed opacity-70"
-          />
-        </Field>
+            <Field label="P/L">
+              <input
+                type="number"
+                step="0.01"
+                value={toInputValue(form.pnl)}
+                onChange={(e) => updateNumber("pnl", e.target.value)}
+                placeholder="25.50"
+                className="input"
+              />
+            </Field>
 
-        <Field label="Result">
-          <select
-            value={form.result}
-            onChange={(e) =>
-              updateForm("result", e.target.value as "WIN" | "LOSS" | "BE")
-            }
-            className="input"
-          >
-            <option value="BE">Break Even</option>
-            <option value="WIN">Win</option>
-            <option value="LOSS">Loss</option>
-          </select>
-        </Field>
+            <Field label="Risk %">
+              <input
+                type="number"
+                value={form.risk_percent ? String(form.risk_percent) : ""}
+                readOnly
+                placeholder="Auto"
+                className="input cursor-not-allowed opacity-70"
+              />
+            </Field>
+
+            <Field label="Result">
+              <select
+                value={form.result}
+                onChange={(e) =>
+                  updateForm("result", e.target.value as "WIN" | "LOSS" | "BE")
+                }
+                className="input"
+              >
+                <option value="BE">Break Even</option>
+                <option value="WIN">Win</option>
+                <option value="LOSS">Loss</option>
+              </select>
+            </Field>
+          </>
+        )}
       </div>
     </section>
   );

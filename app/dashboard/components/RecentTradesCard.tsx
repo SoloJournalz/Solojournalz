@@ -11,7 +11,7 @@ export default function RecentTradesCard({ trades }: RecentTradesCardProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold">Recent Trades</h3>
 
-        <Link href="/storage" className="text-sm font-medium text-[var(--accent)]">
+        <Link href="/trade-review" className="text-sm font-medium text-[var(--accent)]">
           View all
         </Link>
       </div>

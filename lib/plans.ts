@@ -40,7 +40,7 @@ export const PLANS: Record<PlanKey, PlanLimits> = {
   EXPERT: {
     monthlyTrades: null,
     monthlyScreenshots: null,
-    perTradeScreenshots: null,
+    perTradeScreenshots: 3,
     checklistItems: 6,
     psychologyTracking: true,
     equityCurve: true,
