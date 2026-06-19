@@ -318,10 +318,10 @@ function TradeLogPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] md:h-screen md:overflow-hidden">
+    <main className="min-h-screen overflow-y-auto bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:h-[calc(100vh-73px)] md:overflow-hidden md:py-4">
+      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:py-4">
         <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
             Phase 1 · 30% Capture
@@ -344,7 +344,7 @@ function TradeLogPageContent() {
           updateNumber={updateNumber}
         />
 
-        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="mx-auto mt-3 grid max-w-5xl gap-3">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
@@ -358,7 +358,7 @@ function TradeLogPageContent() {
               </span>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="grid gap-2 sm:grid-cols-3">
               {Object.entries(form.checklist).map(([key, checked]) => (
                 <button
                   key={key}
@@ -367,12 +367,12 @@ function TradeLogPageContent() {
                   className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2.5 text-left text-sm font-bold transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
                 >
                   <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white text-xs text-[var(--accent)] ${
-                      checked ? "ring-2 ring-[var(--accent)]" : ""
+                    className={`h-5 w-5 shrink-0 rounded-md border transition ${
+                      checked
+                        ? "border-[var(--accent)] bg-[var(--accent)]"
+                        : "border-[#d8d5cf] bg-white"
                     }`}
-                  >
-                    {checked ? "✓" : ""}
-                  </span>
+                  />
                   <span>{key.replaceAll("_", " ")}</span>
                 </button>
               ))}

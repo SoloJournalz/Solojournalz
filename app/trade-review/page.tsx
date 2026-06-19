@@ -183,12 +183,12 @@ function PreTradeChecklistCard({
               className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-sm font-bold"
             >
               <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white text-xs text-[var(--accent)] ${
-                  checked ? "ring-2 ring-[var(--accent)]" : ""
+                className={`h-5 w-5 shrink-0 rounded-md border transition ${
+                  checked
+                    ? "border-[var(--accent)] bg-[var(--accent)]"
+                    : "border-[#d8d5cf] bg-white"
                 }`}
-              >
-                {checked ? "✓" : ""}
-              </span>
+              />
               <span className="capitalize">{key.replaceAll("_", " ")}</span>
             </div>
           ))}
@@ -222,7 +222,7 @@ function ScreenshotSlot({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 shadow-[0_4px_16px_rgba(0,0,0,0.03)]">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold tracking-tight">{title}</h3>
@@ -241,7 +241,7 @@ function ScreenshotSlot({
       <div
         tabIndex={locked ? -1 : 0}
         onPaste={locked ? undefined : onPaste}
-        className="relative flex h-72 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-[360px]"
+        className="relative flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-[420px]"
       >
         {screenshot ? (
           <a
@@ -867,16 +867,12 @@ function TradeReviewPageContent() {
                         onDelete={() => deleteScreenshot("PHASE_3")}
                       />
 
-                      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[#efeee9] p-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm font-semibold text-[var(--text-secondary)]">
-                          {selectedTrade.result || "BE"} · {formatPnl(selectedTrade.pnl)} · {selectedTrade.trade_date}
-                        </p>
-
+                      <div className="flex justify-end">
                         <button
                           type="button"
                           disabled={saving}
                           onClick={savePhase3}
-                          className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60"
+                          className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
                         >
                           {saving ? "Saving..." : selectedProgress >= 100 ? "Save Changes" : "Complete Trade"}
                         </button>
