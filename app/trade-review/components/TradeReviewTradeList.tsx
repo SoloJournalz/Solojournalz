@@ -50,12 +50,12 @@ export default function TradeReviewTradeList({
 }: TradeReviewTradeListProps) {
   return (
     <section className={cardClass}>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
             Saved Trades
           </p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight">
+          <h2 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">
             Select a trade
           </h2>
         </div>
@@ -75,7 +75,7 @@ export default function TradeReviewTradeList({
           <select
             value={environmentFilter}
             onChange={(e) => onEnvironmentFilterChange(e.target.value)}
-            className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none focus:border-[var(--accent)] sm:py-3"
           >
             <option value="All">All Environments</option>
             <option value="LIVE">Live</option>
@@ -87,7 +87,7 @@ export default function TradeReviewTradeList({
           <select
             value={filter}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none focus:border-[var(--accent)] sm:py-3"
           >
             <option>Newest First</option>
             <option>Oldest First</option>
@@ -101,10 +101,10 @@ export default function TradeReviewTradeList({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search trades..."
-          className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-3 text-sm font-semibold outline-none placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)]"
+          className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-4 py-2.5 text-sm font-semibold outline-none placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)] sm:py-3"
         />
 
-        <div className="max-h-[520px] min-h-72 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-3">
+        <div className="max-h-[320px] min-h-48 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-2 sm:max-h-[420px] sm:min-h-60 sm:p-3 xl:max-h-[520px]">
           {loading ? (
             <div className="flex h-72 items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
               Loading trades

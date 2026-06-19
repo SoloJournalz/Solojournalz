@@ -204,7 +204,7 @@ function ScreenshotSlot({
       <div
         tabIndex={locked ? -1 : 0}
         onPaste={locked ? undefined : onPaste}
-        className="relative flex h-52 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+        className="relative flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white px-3 text-center text-xs font-semibold text-[var(--text-secondary)] outline-none focus:ring-2 focus:ring-[var(--accent)]/20 sm:h-52 sm:text-sm"
       >
         {screenshot ? (
           <a
@@ -673,20 +673,20 @@ function TradeReviewPageContent() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5">
-        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+      <section className="mx-auto max-w-7xl px-3 py-3 sm:px-5 sm:py-5">
+        <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:mb-4 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
             Trade Review Workspace
           </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">
+          <h1 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
             Complete trades one phase at a time
           </h1>
-          <p className="mt-1 max-w-3xl text-sm font-medium text-[var(--text-secondary)]">
+          <p className="mt-1 max-w-3xl text-sm font-medium leading-relaxed text-[var(--text-secondary)] sm:leading-normal">
             Select a saved trade, complete execution details first, then unlock the review, checklist, psychology, notes, and screenshots.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[380px_minmax(0,1fr)] xl:gap-4">
           <div className="min-w-0">
             <TradeReviewTradeList
               trades={filteredTrades || []}
@@ -703,15 +703,15 @@ function TradeReviewPageContent() {
             />
           </div>
 
-          <div className="min-w-0 space-y-4">
+          <div className="min-w-0 space-y-3 sm:space-y-4">
             {!selectedTrade || !form ? (
               <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[#efeee9] px-6 text-center">
+                <div className="flex min-h-60 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[#efeee9] px-6 text-center sm:min-h-[360px]">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                       No trade selected
                     </p>
-                    <h2 className="mt-2 text-2xl font-bold tracking-tight">
+                    <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
                       Choose a saved trade
                     </h2>
                     <p className="mt-2 max-w-md text-sm font-semibold text-[var(--text-secondary)]">
@@ -728,7 +728,7 @@ function TradeReviewPageContent() {
                       <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
                         Selected Trade
                       </p>
-                      <h2 className="mt-1 text-2xl font-bold tracking-tight">
+                      <h2 className="mt-1 truncate text-xl font-bold tracking-tight sm:text-2xl">
                         {selectedTrade.strategy || "No Strategy"} · {selectedTrade.pair}
                       </h2>
                       <p className="mt-1 text-sm font-semibold text-[var(--text-secondary)]">
@@ -748,18 +748,18 @@ function TradeReviewPageContent() {
                     />
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="rounded-xl border border-[var(--border)] bg-[#efeee9] p-3">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Phase 1</p>
-                      <p className="mt-1 text-sm font-bold">Entry captured</p>
+                  <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="rounded-xl border border-[var(--border)] bg-[#efeee9] p-2.5 sm:p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--accent)] sm:text-xs sm:tracking-[0.14em]">Phase 1</p>
+                      <p className="mt-1 text-xs font-bold sm:text-sm">Entry captured</p>
                     </div>
-                    <div className={`rounded-xl border p-3 ${selectedProgress >= 60 ? "border-[var(--border)] bg-[#efeee9]" : "border-[var(--accent)] bg-white"}`}>
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Phase 2</p>
-                      <p className="mt-1 text-sm font-bold">Execution details</p>
+                    <div className={`rounded-xl border p-2.5 sm:p-3 ${selectedProgress >= 60 ? "border-[var(--border)] bg-[#efeee9]" : "border-[var(--accent)] bg-white"}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--accent)] sm:text-xs sm:tracking-[0.14em]">Phase 2</p>
+                      <p className="mt-1 text-xs font-bold sm:text-sm">Execution details</p>
                     </div>
-                    <div className={`rounded-xl border p-3 ${selectedProgress >= 100 ? "border-[var(--border)] bg-[#efeee9]" : canReview ? "border-[var(--accent)] bg-white" : "border-[var(--border)] bg-white opacity-60"}`}>
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Phase 3</p>
-                      <p className="mt-1 text-sm font-bold">Review & reflection</p>
+                    <div className={`rounded-xl border p-2.5 sm:p-3 ${selectedProgress >= 100 ? "border-[var(--border)] bg-[#efeee9]" : canReview ? "border-[var(--accent)] bg-white" : "border-[var(--border)] bg-white opacity-60"}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--accent)] sm:text-xs sm:tracking-[0.14em]">Phase 3</p>
+                      <p className="mt-1 text-xs font-bold sm:text-sm">Review & reflection</p>
                     </div>
                   </div>
                 </section>

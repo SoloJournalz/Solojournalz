@@ -296,10 +296,10 @@ function TradeLogPageContent() {
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
             Phase 1 · 30% Capture
           </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">
+          <h1 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
             Fast Trade Log
           </h1>
-          <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
+          <p className="mt-1 text-sm font-medium leading-relaxed text-[var(--text-secondary)] sm:leading-normal">
             Capture only the entry details now. Execution, review, psychology, and screenshots happen in the Review Workspace.
           </p>
         </div>
@@ -322,8 +322,8 @@ function TradeLogPageContent() {
 
         {savedTradeId ? (
           <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-            <h2 className="text-xl font-bold tracking-tight">Trade captured.</h2>
-            <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
+            <h2 className="text-lg font-bold tracking-tight sm:text-xl">Trade captured.</h2>
+            <p className="mt-1 text-sm font-medium leading-relaxed text-[var(--text-secondary)] sm:leading-normal">
               This trade is saved at 30% completion.
             </p>
 

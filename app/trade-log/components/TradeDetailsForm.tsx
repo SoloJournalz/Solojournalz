@@ -55,9 +55,9 @@ export default function TradeDetailsForm({
         if (isEditMode || mode !== "capture") return;
         onReset();
       }}
-      className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
+      className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5"
     >
-      <h2 className="mb-4 text-xl font-bold tracking-tight">
+      <h2 className="mb-3 text-lg font-bold tracking-tight sm:mb-4 sm:text-xl">
         {mode === "capture"
           ? "Entry Details"
           : isEditMode
@@ -65,7 +65,7 @@ export default function TradeDetailsForm({
             : "Trade Info"}
       </h2>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Environment">
           <select
             value={form.environment}
