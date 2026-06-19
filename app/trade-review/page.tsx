@@ -361,8 +361,9 @@ function TradeReviewPageContent() {
     const safeTrades = (data || []) as Trade[];
     setTrades(safeTrades);
 
-    const selected =
-      safeTrades.find((trade) => trade.id === tradeParam) || safeTrades[0] || null;
+    const selected = tradeParam
+      ? safeTrades.find((trade) => trade.id === tradeParam) || null
+      : null;
 
     setSelectedTrade(selected);
     setForm(selected ? createFormFromTrade(selected, loadedSettings, resolvedPlan) : null);
@@ -665,13 +666,28 @@ function TradeReviewPageContent() {
     return <PageLoading label="Loading Review Workspace" workspace />;
   }
 
+  const canReview = selectedProgress >= 60;
+  const isReviewed = selectedProgress === 100;
+
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-5 py-5">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.85fr_1.35fr]">
-          <div className="space-y-4">
+      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5">
+        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+            Trade Review Workspace
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">
+            Complete trades one phase at a time
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm font-medium text-[var(--text-secondary)]">
+            Select a saved trade, complete execution details first, then unlock the review, checklist, psychology, notes, and screenshots.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <div className="min-w-0">
             <TradeReviewTradeList
               trades={filteredTrades || []}
               selectedTradeId={selectedTrade?.id}
@@ -685,128 +701,226 @@ function TradeReviewPageContent() {
               onSelectTrade={(trade) => selectTrade(trade as Trade)}
               onDeleteTrade={deleteSelectedTrade}
             />
-
-            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-              <div className="mb-3 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-                    Review Workspace
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold tracking-tight">
-                    {selectedTrade ? getProgressLabel(selectedProgress) : "No trade selected"}
-                  </h2>
-                </div>
-
-                <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
-                  {selectedTrade ? `${selectedProgress}%` : "0%"}
-                </span>
-              </div>
-
-              <div className="h-2 overflow-hidden rounded-full bg-[#efeee9]">
-                <div
-                  className="h-full rounded-full bg-[var(--accent)]"
-                  style={{ width: `${selectedTrade ? selectedProgress : 0}%` }}
-                />
-              </div>
-
-              <p className="mt-3 text-sm font-medium text-[var(--text-secondary)]">
-                Phase 1 is captured in Trade Log. Complete execution details, then finish the review and reflection here.
-              </p>
-            </section>
           </div>
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             {!selectedTrade || !form ? (
               <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                <div className="flex min-h-60 items-center justify-center rounded-2xl border border-[var(--border)] bg-[#efeee9] text-sm font-semibold text-[var(--text-secondary)]">
-                  Select a trade to review.
+                <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[#efeee9] px-6 text-center">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+                      No trade selected
+                    </p>
+                    <h2 className="mt-2 text-2xl font-bold tracking-tight">
+                      Choose a saved trade
+                    </h2>
+                    <p className="mt-2 max-w-md text-sm font-semibold text-[var(--text-secondary)]">
+                      Use the list on the left to open a captured trade. The workspace will only show the next phase you need to complete.
+                    </p>
+                  </div>
                 </div>
               </section>
             ) : (
               <>
-                <TradeDetailsForm
-                  form={form}
-                  settings={settings}
-                  isEditMode
-                  mode="execution"
-                  onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
-                  updateForm={updateForm}
-                  updateNumber={updateNumber}
-                />
+                <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+                        Selected Trade
+                      </p>
+                      <h2 className="mt-1 text-2xl font-bold tracking-tight">
+                        {selectedTrade.strategy || "No Strategy"} · {selectedTrade.pair}
+                      </h2>
+                      <p className="mt-1 text-sm font-semibold text-[var(--text-secondary)]">
+                        {selectedTrade.environment || "N/A"} · {selectedTrade.direction || "N/A"} · {selectedTrade.trade_date} · {selectedTrade.entry_time || "No time"}
+                      </p>
+                    </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={savePhase2}
-                    className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60"
-                  >
-                    {saving ? "Saving..." : "Save Phase 2 · 60%"}
-                  </button>
-                </div>
-
-                <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                  <div className="mb-4">
-                    <h2 className="text-xl font-bold tracking-tight">Structured Screenshots</h2>
-                    <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
-                      Free gets one review screenshot. Expert gets the full setup → execution → review trade story.
-                    </p>
+                    <span className="w-fit rounded-full bg-[#efeee9] px-4 py-2 text-xs font-bold text-[var(--text-secondary)]">
+                      {selectedProgress}% Complete
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    {phaseScreenshotConfig.map((item) => {
-                      const locked = item.expertOnly && currentPlan !== "EXPERT";
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#efeee9]">
+                    <div
+                      className="h-full rounded-full bg-[var(--accent)] transition-all"
+                      style={{ width: `${selectedProgress}%` }}
+                    />
+                  </div>
 
-                      return (
-                        <ScreenshotSlot
-                          key={item.phase}
-                          title={item.title}
-                          helper={item.helper}
-                          screenshot={screenshotsByPhase[item.phase]}
-                          locked={locked}
-                          saving={screenshotSaving}
-                          onCapture={() => captureScreenshot(item.phase)}
-                          onPaste={(event) => handlePasteScreenshot(item.phase, event)}
-                          onDelete={() => deleteScreenshot(item.phase)}
-                        />
-                      );
-                    })}
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="rounded-xl border border-[var(--border)] bg-[#efeee9] p-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Phase 1</p>
+                      <p className="mt-1 text-sm font-bold">Entry captured</p>
+                    </div>
+                    <div className={`rounded-xl border p-3 ${selectedProgress >= 60 ? "border-[var(--border)] bg-[#efeee9]" : "border-[var(--accent)] bg-white"}`}>
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Phase 2</p>
+                      <p className="mt-1 text-sm font-bold">Execution details</p>
+                    </div>
+                    <div className={`rounded-xl border p-3 ${selectedProgress >= 100 ? "border-[var(--border)] bg-[#efeee9]" : canReview ? "border-[var(--accent)] bg-white" : "border-[var(--border)] bg-white opacity-60"}`}>
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--accent)]">Phase 3</p>
+                      <p className="mt-1 text-sm font-bold">Review & reflection</p>
+                    </div>
                   </div>
                 </section>
 
-                <TradeChecklist
-                  checklist={form.checklist}
-                  onToggle={toggleChecklist}
-                  limitLabel={`${Object.keys(form.checklist).length}/${PLANS[currentPlan].checklistItems}`}
-                />
+                {selectedProgress < 60 ? (
+                  <>
+                    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+                      <div className="mb-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+                          Phase 2 · 60% Completion
+                        </p>
+                        <h2 className="mt-1 text-xl font-bold tracking-tight">
+                          Add execution details
+                        </h2>
+                        <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
+                          Keep this focused. Add stop loss, take profit, size, exit, result, and P/L. The review section unlocks after this is saved.
+                        </p>
+                      </div>
 
-                {PLANS[currentPlan].psychologyTracking && (
-                  <PsychologyPanel
-                    emotions={settings.emotions}
-                    selectedEmotions={form.emotions}
-                    onSelect={setEmotion}
-                  />
+                      <TradeDetailsForm
+                        form={form}
+                        settings={settings}
+                        isEditMode
+                        mode="execution"
+                        onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
+                        updateForm={updateForm}
+                        updateNumber={updateNumber}
+                      />
+                    </section>
+
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
+                        className="w-full rounded-2xl bg-[#efeee9] px-8 py-3 font-semibold text-[var(--text-secondary)] sm:w-auto"
+                      >
+                        Reset Changes
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={savePhase2}
+                        className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60 sm:w-auto"
+                      >
+                        {saving ? "Saving..." : "Save Phase 2 · Unlock Review"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+                      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+                            Phase 2 Complete
+                          </p>
+                          <h2 className="mt-1 text-xl font-bold tracking-tight">
+                            Execution summary
+                          </h2>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={savePhase2}
+                          className="w-full rounded-xl bg-[#efeee9] px-4 py-2 text-sm font-bold text-[var(--text-secondary)] disabled:opacity-60 sm:w-auto"
+                        >
+                          Save execution edits
+                        </button>
+                      </div>
+
+                      <TradeDetailsForm
+                        form={form}
+                        settings={settings}
+                        isEditMode
+                        mode="execution"
+                        onReset={() => setForm(createFormFromTrade(selectedTrade, settings, currentPlan))}
+                        updateForm={updateForm}
+                        updateNumber={updateNumber}
+                      />
+                    </section>
+
+                    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+                      <div className="mb-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+                          Phase 3 · Review & Reflection
+                        </p>
+                        <h2 className="mt-1 text-xl font-bold tracking-tight">
+                          Finish the trade story
+                        </h2>
+                        <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
+                          Complete checklist, psychology, notes, and the structured screenshot timeline.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <section className="rounded-2xl border border-[var(--border)] bg-[#f8f6f2] p-4">
+                          <div className="mb-4">
+                            <h3 className="text-lg font-bold tracking-tight">Structured Screenshots</h3>
+                            <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
+                              Free gets one review screenshot. Expert gets the full setup → execution → review trade story.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            {phaseScreenshotConfig.map((item) => {
+                              const locked = item.expertOnly && currentPlan !== "EXPERT";
+
+                              return (
+                                <ScreenshotSlot
+                                  key={item.phase}
+                                  title={item.title}
+                                  helper={item.helper}
+                                  screenshot={screenshotsByPhase[item.phase]}
+                                  locked={locked}
+                                  saving={screenshotSaving}
+                                  onCapture={() => captureScreenshot(item.phase)}
+                                  onPaste={(event) => handlePasteScreenshot(item.phase, event)}
+                                  onDelete={() => deleteScreenshot(item.phase)}
+                                />
+                              );
+                            })}
+                          </div>
+                        </section>
+
+                        <TradeChecklist
+                          checklist={form.checklist}
+                          onToggle={toggleChecklist}
+                          limitLabel={`${Object.keys(form.checklist).length}/${PLANS[currentPlan].checklistItems}`}
+                        />
+
+                        {PLANS[currentPlan].psychologyTracking && (
+                          <PsychologyPanel
+                            emotions={settings.emotions}
+                            selectedEmotions={form.emotions}
+                            onSelect={setEmotion}
+                          />
+                        )}
+
+                        <TradeNotes
+                          value={form.notes ?? ""}
+                          onChange={(value) => updateForm("notes", value)}
+                        />
+                      </div>
+                    </section>
+
+                    <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                      <p className="text-sm font-semibold text-[var(--text-secondary)]">
+                        {isReviewed ? "Review completed" : "Ready to complete review"} · {form.result || "BE"} · {formatPnl(form.pnl)}
+                      </p>
+
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={savePhase3}
+                        className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60 sm:w-auto"
+                      >
+                        {saving ? "Saving..." : isReviewed ? "Save Review Updates" : "Complete Review · 100%"}
+                      </button>
+                    </div>
+                  </>
                 )}
-
-                <TradeNotes
-                  value={form.notes ?? ""}
-                  onChange={(value) => updateForm("notes", value)}
-                />
-
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                  <p className="text-sm font-semibold text-[var(--text-secondary)]">
-                    {selectedTrade.result || "BE"} · {formatPnl(selectedTrade.pnl)} · {selectedTrade.trade_date}
-                  </p>
-
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={savePhase3}
-                    className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] disabled:opacity-60"
-                  >
-                    {saving ? "Saving..." : "Complete Review · 100%"}
-                  </button>
-                </div>
               </>
             )}
           </div>

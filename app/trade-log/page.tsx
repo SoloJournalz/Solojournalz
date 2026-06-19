@@ -291,8 +291,8 @@ function TradeLogPageContent() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-5xl px-5 py-5">
-        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 sm:py-5">
+        <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
             Phase 1 · 30% Capture
           </p>
@@ -321,17 +321,17 @@ function TradeLogPageContent() {
         )}
 
         {savedTradeId ? (
-          <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+          <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             <h2 className="text-xl font-bold tracking-tight">Trade captured.</h2>
             <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
               This trade is saved at 30% completion.
             </p>
 
-            <div className="mt-4 flex flex-wrap justify-end gap-3">
+            <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
               <button
                 type="button"
                 onClick={resetTradeLog}
-                className="rounded-2xl bg-[#efeee9] px-8 py-3 font-semibold text-[var(--text-secondary)]"
+                className="w-full rounded-2xl bg-[#efeee9] px-8 py-3 font-semibold text-[var(--text-secondary)] sm:w-auto"
               >
                 Go back to Trade Log
               </button>
@@ -339,7 +339,7 @@ function TradeLogPageContent() {
               <button
                 type="button"
                 onClick={() => router.push(`/trade-review?trade=${savedTradeId}`)}
-                className="rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)]"
+                className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] sm:w-auto"
               >
                 Continue to Review this trade
               </button>

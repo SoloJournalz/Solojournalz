@@ -77,12 +77,20 @@ function NavbarInner({
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto grid h-[72px] max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-6 px-10">
-          <div className="justify-self-start">
+        <div className="mx-auto flex min-h-[72px] max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-6 lg:px-10">
+          <div className="min-w-0 flex-1 lg:flex-none lg:justify-self-start">
             <Logo href="/dashboard" />
           </div>
 
-          <nav className="flex items-center justify-center gap-4 text-sm">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="shrink-0 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] sm:px-4 sm:text-sm lg:justify-self-end"
+          >
+            Logout
+          </button>
+
+          <nav className="order-last flex w-full items-center gap-2 overflow-x-auto pb-1 text-sm [-ms-overflow-style:none] [scrollbar-width:none] lg:order-none lg:w-auto lg:justify-center lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {links.map((link) => {
               const active = pendingHref
                 ? pendingHref === link.href
@@ -126,8 +134,8 @@ function NavbarInner({
                   aria-current={active ? "page" : undefined}
                   className={
                     active
-                      ? "rounded-xl bg-[var(--accent)] px-5 py-2.5 font-medium text-white shadow-[0_6px_18px_rgba(110,17,17,0.18)] transition"
-                      : "rounded-xl px-5 py-2.5 font-medium text-[var(--text-secondary)] transition hover:bg-black/[0.03] hover:text-[var(--text-primary)]"
+                      ? "shrink-0 rounded-xl bg-[var(--accent)] px-4 py-2.5 font-medium text-white shadow-[0_6px_18px_rgba(110,17,17,0.18)] transition sm:px-5"
+                      : "shrink-0 rounded-xl px-4 py-2.5 font-medium text-[var(--text-secondary)] transition hover:bg-black/[0.03] hover:text-[var(--text-primary)] sm:px-5"
                   }
                 >
                   {label}
@@ -135,14 +143,6 @@ function NavbarInner({
               );
             })}
           </nav>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="justify-self-end rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--text-secondary)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
-          >
-            Logout
-          </button>
         </div>
       </header>
 
@@ -154,7 +154,6 @@ function NavbarInner({
     </>
   );
 }
-
 
 export default function Navbar({
   hasUnsavedChanges = false,
