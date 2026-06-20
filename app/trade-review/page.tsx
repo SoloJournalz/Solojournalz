@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import type { ChangeEvent, ClipboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Navbar from "@/app/components/layout/navbar";
@@ -8,12 +9,10 @@ import PageLoading from "@/app/components/layout/page-loading";
 
 import { supabase } from "@/lib/supabase/client";
 import { PLANS, PlanKey } from "@/lib/plans";
-import type { TradeFormData, TradeProgressPercent } from "@/types/trade";
+import type { ScreenshotPhase, TradeFormData, TradeProgressPercent } from "@/types/trade";
 import { calculateTradeMetrics } from "@/types/trade";
 
 import TradeReviewTradeList from "./components/TradeReviewTradeList";
-import PreTradeChecklistCard from "./components/PreTradeChecklistCard";
-import TradeReviewPhaseHeader from "./components/TradeReviewPhaseHeader";
 import TradeDetailsForm from "../trade-log/components/TradeDetailsForm";
 import TradeNotes from "../trade-log/components/TradeNotes";
 import PsychologyPanel from "../trade-log/components/PsychologyPanel";
@@ -43,6 +42,14 @@ type Trade = {
   created_at: string;
 };
 
+type TradeScreenshot = {
+  id: string;
+  trade_id: string;
+  image_url: string;
+  phase: ScreenshotPhase | null;
+  created_at: string;
+};
+
 type UserTradeSettings = {
   environments: string[];
   strategies: string[];
@@ -66,6 +73,26 @@ const fallbackSettings: UserTradeSettings = {
   },
   notes_template: "",
 };
+
+const phaseScreenshotConfig: {
+  phase: ScreenshotPhase;
+  title: string;
+  expertOnly: boolean;
+  helper: string;
+}[] = [
+  {
+    phase: "PHASE_2",
+    title: "Execution screenshot",
+    expertOnly: true,
+    helper: "Expert only. Upload or paste the trade management screenshot while the position is active.",
+  },
+  {
+    phase: "PHASE_3",
+    title: "Review screenshot",
+    expertOnly: false,
+    helper: "Free and Expert. Upload or paste the post-trade outcome screenshot before completing the review.",
+  },
+];
 
 const toInputValue = (value: number | null | undefined) =>
   value === null || value === undefined ? 0 : Number(value);
@@ -118,10 +145,171 @@ const createFormFromTrade = (
   progress_percent: getProgress(trade),
 });
 
+const formatPnl = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return "P/L N/A";
+  const number = Number(value);
+  if (number > 0) return `P/L +${number}`;
+  return `P/L ${number}`;
+};
+
 const mergeTradeUpdate = (trade: Trade, values: Partial<Trade>): Trade => ({
   ...trade,
   ...values,
 });
+
+function PreTradeChecklistCard({
+  checklist,
+  onToggle,
+}: {
+  checklist?: Record<string, boolean> | null;
+  onToggle?: (key: string) => void;
+}) {
+  const entries = Object.entries(checklist || {});
+  const completed = entries.filter(([, checked]) => checked).length;
+
+  return (
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h2 className="text-xl font-bold tracking-tight">Pre-trade checklist</h2>
+
+        <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
+          {entries.length ? `${completed}/${entries.length}` : "N/A"}
+        </span>
+      </div>
+
+      {entries.length ? (
+        <div className="grid gap-2">
+          {entries.map(([key, checked]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onToggle?.(key)}
+              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-3 text-left text-sm font-bold transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
+            >
+              <span
+                className={`h-5 w-5 shrink-0 rounded-md border transition ${
+                  checked
+                    ? "border-[var(--accent)] bg-[var(--accent)]"
+                    : "border-[#d8d5cf] bg-white"
+                }`}
+              />
+              <span className="capitalize">{key.replaceAll("_", " ")}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-xl bg-[#efeee9] px-3 py-3 text-sm font-semibold text-[var(--text-secondary)]">
+          Select a saved trade to view its checklist.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function ScreenshotSlot({
+  title,
+  helper,
+  screenshot,
+  locked,
+  saving,
+  onUpload,
+  onPaste,
+  onDelete,
+}: {
+  title: string;
+  helper: string;
+  screenshot?: TradeScreenshot;
+  locked: boolean;
+  saving: boolean;
+  onUpload: (file: File) => void;
+  onPaste: (event: ClipboardEvent<HTMLDivElement>) => void;
+  onDelete: () => void;
+}) {
+  const inputId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-upload`;
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    onUpload(file);
+    event.target.value = "";
+  };
+
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold tracking-tight">{title}</h3>
+          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
+            {helper}
+          </p>
+        </div>
+
+        {locked && (
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[var(--accent)]">
+            Expert
+          </span>
+        )}
+      </div>
+
+      <div
+        tabIndex={locked ? -1 : 0}
+        onPaste={locked ? undefined : onPaste}
+        className="relative flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-center text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-[420px]"
+      >
+        {screenshot ? (
+          <a
+            href={screenshot.image_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex h-full w-full items-center justify-center"
+          >
+            <img
+              src={screenshot.image_url}
+              alt={title}
+              className="h-full w-full rounded-2xl object-contain"
+            />
+          </a>
+        ) : (
+          <span className="px-4">
+            {locked
+              ? "Upgrade to add this phase."
+              : "Paste a snip here, or upload a screenshot."}
+          </span>
+        )}
+
+        {!locked && !screenshot && (
+          <label
+            htmlFor={inputId}
+            className="absolute bottom-4 left-4 cursor-pointer rounded-full bg-[var(--accent)] px-5 py-3 text-xs font-bold text-white shadow-[0_10px_25px_rgba(110,17,17,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.26)]"
+          >
+            {saving ? "Uploading..." : "Upload Screenshot"}
+            <input
+              id={inputId}
+              type="file"
+              accept="image/*"
+              disabled={saving}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+        )}
+
+        {!locked && screenshot && (
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onDelete}
+            className="absolute bottom-4 right-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-[var(--accent)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:bg-[var(--accent)] hover:text-white disabled:opacity-60"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 function TradeReviewPageContent() {
   const router = useRouter();
@@ -131,6 +319,7 @@ function TradeReviewPageContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [form, setForm] = useState<TradeFormData | null>(null);
+  const [screenshots, setScreenshots] = useState<TradeScreenshot[]>([]);
   const [settings, setSettings] = useState<UserTradeSettings>(fallbackSettings);
 
   const [search, setSearch] = useState("");
@@ -138,8 +327,24 @@ function TradeReviewPageContent() {
   const [environmentFilter, setEnvironmentFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [screenshotSaving, setScreenshotSaving] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
   const [activePhase, setActivePhase] = useState<"PHASE_2" | "PHASE_3">("PHASE_2");
+
+  const fetchScreenshots = async (tradeId: string) => {
+    const { data, error } = await supabase
+      .from("trade_screenshots")
+      .select("*")
+      .eq("trade_id", tradeId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      setScreenshots([]);
+      return;
+    }
+
+    setScreenshots((data || []) as TradeScreenshot[]);
+  };
 
   const fetchTrades = async () => {
     setLoading(true);
@@ -225,6 +430,11 @@ function TradeReviewPageContent() {
     setForm(selected ? createFormFromTrade(selected, loadedSettings, resolvedPlan) : null);
     setActivePhase(getProgress(selected) >= 60 ? "PHASE_3" : "PHASE_2");
 
+    if (selected) {
+      await fetchScreenshots(selected.id);
+    } else {
+      setScreenshots([]);
+    }
 
     setLoading(false);
   };
@@ -235,13 +445,11 @@ function TradeReviewPageContent() {
   }, []);
 
   const selectTrade = async (trade: Trade) => {
-    const scrollY = window.scrollY;
-
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
     window.history.replaceState(null, "", `/trade-review?trade=${trade.id}`);
-    requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: "auto" }));
+    await fetchScreenshots(trade.id);
   };
 
   const filteredTrades = useMemo(() => {
@@ -430,11 +638,100 @@ function TradeReviewPageContent() {
       return;
     }
 
+    setScreenshots([]);
     await fetchTrades();
   };
 
-  const selectedProgress = getProgress(selectedTrade);
+  const uploadScreenshot = async (phase: ScreenshotPhase, file: File | Blob) => {
+    if (!selectedTrade) return;
+    setScreenshotSaving(true);
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("Not logged in. Please sign in again.");
+      setScreenshotSaving(false);
+      return;
+    }
+
+    try {
+      const existing = screenshots.find((shot) => shot.phase === phase);
+      if (existing) {
+        await supabase.from("trade_screenshots").delete().eq("id", existing.id);
+      }
+
+      const contentType = file.type || "image/png";
+      const extension = contentType.includes("png") ? "png" : "jpg";
+      const filePath = `${user.id}/${selectedTrade.id}/${phase}-${crypto.randomUUID()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("trade-screenshots")
+        .upload(filePath, file, {
+          contentType,
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("trade-screenshots").getPublicUrl(filePath);
+
+      const { error: dbError } = await supabase.from("trade_screenshots").insert({
+        trade_id: selectedTrade.id,
+        image_url: publicUrl,
+        phase,
+      });
+
+      if (dbError) throw dbError;
+      await fetchScreenshots(selectedTrade.id);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Screenshot upload failed.");
+    }
+
+    setScreenshotSaving(false);
+  };
+
+  const handlePasteScreenshot = async (
+    phase: ScreenshotPhase,
+    event: ClipboardEvent<HTMLDivElement>,
+  ) => {
+    const items = event.clipboardData.items;
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (!file) return;
+
+        await uploadScreenshot(phase, file);
+        return;
+      }
+    }
+  };
+
+  const deleteScreenshot = async (phase: ScreenshotPhase) => {
+    const screenshot = screenshots.find((shot) => shot.phase === phase);
+    if (!screenshot) return;
+
+    const { error } = await supabase
+      .from("trade_screenshots")
+      .delete()
+      .eq("id", screenshot.id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    if (selectedTrade) await fetchScreenshots(selectedTrade.id);
+  };
+
+  const selectedProgress = getProgress(selectedTrade);
+  const screenshotsByPhase = Object.fromEntries(
+    screenshots.map((screenshot) => [screenshot.phase || "PHASE_3", screenshot]),
+  ) as Partial<Record<ScreenshotPhase, TradeScreenshot>>;
 
   if (loading) {
     return <PageLoading label="Loading Review Workspace" workspace />;
@@ -447,7 +744,7 @@ function TradeReviewPageContent() {
       <section className="mx-auto max-w-7xl px-5 py-10">
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-medium text-[var(--gold)]">Trade Review</p>
+            <p className="text-sm font-medium text-[var(--gold)]">Trade Review Workspace</p>
 
             <h1 className="mt-2 text-4xl font-bold tracking-tight">Trade Review</h1>
 
@@ -487,11 +784,42 @@ function TradeReviewPageContent() {
               </div>
             ) : (
               <div className="flex flex-col">
-                <TradeReviewPhaseHeader
-                  activePhase={activePhase}
-                  selectedProgress={selectedProgress}
-                  onPhaseChange={setActivePhase}
-                />
+                <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
+                      {activePhase === "PHASE_2" ? "Phase 2 · Execution" : "Phase 3 · Review"}
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
+                      {activePhase === "PHASE_2" ? "Execution details" : "Review and reflection"}
+                    </h2>
+                  </div>
+
+                  <div className="grid grid-cols-2 rounded-2xl bg-[#efeee9] p-1 text-sm font-black text-[var(--text-secondary)] lg:w-[340px]">
+                    <button
+                      type="button"
+                      onClick={() => setActivePhase("PHASE_2")}
+                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 ${
+                        activePhase === "PHASE_2"
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
+                          : "hover:text-[var(--accent)]"
+                      }`}
+                    >
+                      Phase 2
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePhase("PHASE_3")}
+                      disabled={selectedProgress < 60}
+                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                        activePhase === "PHASE_3"
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
+                          : "hover:text-[var(--accent)]"
+                      }`}
+                    >
+                      Phase 3
+                    </button>
+                  </div>
+                </div>
 
                 <div className="mt-3 flex-1">
                   {activePhase === "PHASE_2" ? (
@@ -505,6 +833,23 @@ function TradeReviewPageContent() {
                         updateForm={updateForm}
                         updateNumber={updateNumber}
                       />
+
+                      {currentPlan === "EXPERT" ? (
+                        <ScreenshotSlot
+                          title={phaseScreenshotConfig[0].title}
+                          helper={phaseScreenshotConfig[0].helper}
+                          screenshot={screenshotsByPhase.PHASE_2}
+                          locked={false}
+                          saving={screenshotSaving}
+                          onUpload={(file) => uploadScreenshot("PHASE_2", file)}
+                          onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
+                          onDelete={() => deleteScreenshot("PHASE_2")}
+                        />
+                      ) : (
+                        <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)]">
+                          Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep review screenshot upload/paste in Phase 3.
+                        </div>
+                      )}
 
                       <div className="flex justify-end">
                         <button
@@ -530,6 +875,17 @@ function TradeReviewPageContent() {
                       <TradeNotes
                         value={form.notes ?? ""}
                         onChange={(value) => updateForm("notes", value)}
+                      />
+
+                      <ScreenshotSlot
+                        title={phaseScreenshotConfig[1].title}
+                        helper={phaseScreenshotConfig[1].helper}
+                        screenshot={screenshotsByPhase.PHASE_3}
+                        locked={false}
+                        saving={screenshotSaving}
+                        onUpload={(file) => uploadScreenshot("PHASE_3", file)}
+                        onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
+                        onDelete={() => deleteScreenshot("PHASE_3")}
                       />
 
                       <div className="flex justify-end">
