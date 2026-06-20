@@ -352,12 +352,7 @@ function TradeLogPageContent() {
         <div className="grid gap-4">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-                  Phase 1 checklist
-                </p>
-                <h2 className="mt-1 text-lg font-bold tracking-tight">Pre-trade checklist</h2>
-              </div>
+              <h2 className="text-lg font-bold tracking-tight">Pre-trade checklist</h2>
               <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
                 {Object.values(form.checklist).filter(Boolean).length}/{Object.keys(form.checklist).length}
               </span>

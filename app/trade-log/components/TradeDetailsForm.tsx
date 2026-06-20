@@ -59,10 +59,10 @@ export default function TradeDetailsForm({
     >
       <h2 className="mb-3 text-lg font-bold tracking-tight sm:mb-4 sm:text-xl">
         {mode === "capture"
-          ? "Entry Details"
+          ? "Setup"
           : isEditMode
-            ? "Edit Execution Details"
-            : "Trade Info"}
+            ? "Execution details"
+            : "Trade info"}
       </h2>
 
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">

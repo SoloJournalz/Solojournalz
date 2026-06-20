@@ -58,10 +58,7 @@ export default function TradeReviewTradeList({
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--gold)]">
-            Saved Trades
-          </p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight">Select a trade</h2>
+          <h2 className="text-xl font-bold tracking-tight">Select a trade</h2>
         </div>
 
         <button
