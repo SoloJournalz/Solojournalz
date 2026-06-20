@@ -336,11 +336,17 @@ const buildSampleTrades = (
   userId: string,
   plan: PlanKey,
   count: number,
+  settings: UserTradeSettings,
   cycleStart?: string,
   cycleEnd?: string,
 ) => {
-  const checklist = limitChecklistForPlan(defaultSettings.checklist, plan);
+  const checklist = limitChecklistForPlan(settings.checklist || defaultSettings.checklist, plan);
   const canUsePsychology = PLANS[plan].psychologyTracking;
+  const availableEnvironments = settings.environments.length ? settings.environments : ["Live"];
+  const availablePairs = settings.pairs.length ? settings.pairs : sampleTradeTemplates.map((trade) => trade.pair);
+  const availableStrategies = settings.strategies.length ? settings.strategies : sampleTradeTemplates.map((trade) => trade.strategy);
+  const availableTradeTypes = settings.trade_types.length ? settings.trade_types : sampleTradeTemplates.map((trade) => trade.trade_type);
+  const availableEmotions = settings.emotions.length ? settings.emotions : defaultSettings.emotions;
   const now = Date.now();
   const startTime = cycleStart
     ? new Date(cycleStart).getTime()
@@ -391,10 +397,10 @@ const buildSampleTrades = (
       user_id: userId,
       trade_date: date.toISOString().slice(0, 10),
       entry_time: `${String(entryHour).padStart(2, "0")}:${entryMinute}`,
-      environment: randomItem(defaultSettings.environments),
-      pair: template.pair,
-      strategy: template.strategy,
-      trade_type: template.trade_type,
+      environment: randomItem(availableEnvironments),
+      pair: randomItem(availablePairs) || template.pair,
+      strategy: randomItem(availableStrategies) || template.strategy,
+      trade_type: randomItem(availableTradeTypes) || template.trade_type,
       direction: template.direction,
       entry_price: entryPrice,
       position_size: Number((template.position_size * positionMultiplier).toFixed(2)),
@@ -404,7 +410,7 @@ const buildSampleTrades = (
       pnl,
       result,
       checklist,
-      emotions: canUsePsychology ? [randomItem(defaultSettings.emotions)] : [],
+      emotions: canUsePsychology && availableEmotions.length ? [randomItem(availableEmotions)] : [],
       notes: template.notes,
       created_at: date.toISOString(),
     };
@@ -769,6 +775,7 @@ function SettingsPageContent() {
       user.id,
       currentPlan,
       seedCount,
+      settings,
       usage.cycleStart,
       usage.cycleEnd,
     );

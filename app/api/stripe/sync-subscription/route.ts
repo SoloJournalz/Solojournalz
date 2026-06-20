@@ -102,12 +102,21 @@ export async function POST() {
 
   const { data: currentPlan, error: planError } = await supabase
     .from("user_plans")
-    .select("stripe_customer_id, stripe_subscription_id")
+    .select("plan, subscription_status, stripe_customer_id, stripe_subscription_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (planError) {
     return NextResponse.json({ error: planError.message }, { status: 500 });
+  }
+
+  if (
+    currentPlan?.subscription_status === "dev_active" &&
+    currentPlan?.plan === "EXPERT" &&
+    !currentPlan?.stripe_subscription_id &&
+    !currentPlan?.stripe_customer_id
+  ) {
+    return NextResponse.json({ ok: true, synced: false, devOverride: true });
   }
 
   const subscription = await findLatestStripeSubscription({

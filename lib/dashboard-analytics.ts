@@ -79,6 +79,19 @@ function hasMeaningfulValue(value: unknown): boolean {
   return Boolean(value);
 }
 
+function normalizeEnvironmentLabel(value?: string | null): string | null {
+  const clean = String(value || "").trim();
+  if (!clean) return null;
+
+  const lowered = clean.toLowerCase();
+
+  if (["unknown", "n/a", "na", "untagged", "undefined", "null"].includes(lowered)) {
+    return null;
+  }
+
+  return clean;
+}
+
 function sortTrades(trades: DashboardTrade[]) {
   return [...trades].sort((a, b) => {
     const aDate = `${a.trade_date || ""} ${a.entry_time || ""} ${a.created_at || ""}`;
@@ -204,7 +217,9 @@ export function getDashboardAnalytics(rawTrades: DashboardTrade[]): DashboardAna
 
   const environmentBreakdown = Object.values(
     trades.reduce<Record<string, EnvironmentBreakdown>>((acc, trade) => {
-      const environment = String(trade.environment || "Unknown");
+      const environment = normalizeEnvironmentLabel(trade.environment);
+
+      if (!environment) return acc;
 
       if (!acc[environment]) {
         acc[environment] = {

@@ -18,6 +18,7 @@ type TradeReviewTradeListProps = {
   search: string;
   filter: string;
   environmentFilter: string;
+  environments: string[];
   onSearchChange: (value: string) => void;
   onFilterChange: (value: string) => void;
   onEnvironmentFilterChange: (value: string) => void;
@@ -74,6 +75,7 @@ export default function TradeReviewTradeList({
   search,
   filter,
   environmentFilter,
+  environments,
   onSearchChange,
   onFilterChange,
   onEnvironmentFilterChange,
@@ -102,10 +104,11 @@ export default function TradeReviewTradeList({
           className="w-full rounded-xl border border-[#d8d5cf] bg-[#efeee9] px-3 py-2.5 text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)]"
         >
           <option value="All">All Environments</option>
-          <option value="LIVE">Live</option>
-          <option value="TESTING">Testing</option>
-          <option value="BACKTESTING">Backtesting</option>
-          <option value="CHALLENGE">Challenge</option>
+          {environments.map((environment) => (
+            <option key={environment} value={environment}>
+              {environment}
+            </option>
+          ))}
         </select>
 
         <select
