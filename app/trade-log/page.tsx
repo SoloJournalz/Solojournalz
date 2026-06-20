@@ -22,13 +22,22 @@ type UserTradeSettings = {
   notes_template: string;
 };
 
+const expertChecklistDefaults: Record<string, boolean> = {
+  news_checked: false,
+  risk_checked: false,
+  plan_confirmed: false,
+  entry_reason_clear: false,
+  stop_loss_defined: false,
+  management_plan_ready: false,
+};
+
 const fallbackSettings: UserTradeSettings = {
   environments: ["LIVE", "TESTING", "BACKTESTING", "CHALLENGE"],
   strategies: ["Breakout", "Reversal", "Continuation"],
   pairs: ["EUR/USD", "GBP/USD", "XAU/USD"],
   trade_types: ["Scalp", "Day Trade", "Swing"],
   emotions: ["calm", "focused", "anxious", "revenge", "tilt"],
-  checklist: {},
+  checklist: expertChecklistDefaults,
   notes_template: "",
 };
 
@@ -45,10 +54,16 @@ const getCurrentTime = () => {
 const limitChecklistForPlan = (
   checklist: Record<string, boolean>,
   plan: PlanKey,
-) =>
-  Object.fromEntries(
-    Object.entries(checklist).slice(0, PLANS[plan].checklistItems),
+) => {
+  const mergedChecklist =
+    plan === "EXPERT"
+      ? { ...expertChecklistDefaults, ...checklist }
+      : checklist;
+
+  return Object.fromEntries(
+    Object.entries(mergedChecklist).slice(0, PLANS[plan].checklistItems),
   );
+};
 
 const createInitialForm = (
   settings: UserTradeSettings = fallbackSettings,

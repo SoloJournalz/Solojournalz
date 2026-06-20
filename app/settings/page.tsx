@@ -71,13 +71,22 @@ type SampleTradeTemplate = {
   notes: string;
 };
 
+const expertChecklistDefaults: Record<string, boolean> = {
+  news_checked: false,
+  risk_checked: false,
+  plan_confirmed: false,
+  entry_reason_clear: false,
+  stop_loss_defined: false,
+  management_plan_ready: false,
+};
+
 const defaultSettings: UserTradeSettings = {
   environments: [],
   strategies: [],
   pairs: [],
   trade_types: [],
   emotions: [],
-  checklist: {},
+  checklist: expertChecklistDefaults,
   notes_template: "",
 };
 
@@ -253,10 +262,16 @@ const createChecklistKey = (value: string) =>
 const limitChecklistForPlan = (
   checklist: Record<string, boolean>,
   plan: PlanKey,
-) =>
-  Object.fromEntries(
-    Object.entries(checklist).slice(0, PLANS[plan].checklistItems),
+) => {
+  const mergedChecklist =
+    plan === "EXPERT"
+      ? { ...expertChecklistDefaults, ...checklist }
+      : checklist;
+
+  return Object.fromEntries(
+    Object.entries(mergedChecklist).slice(0, PLANS[plan].checklistItems),
   );
+};
 
 const calculateRiskPercent = (entryPrice: number, stopLoss: number) => {
   if (!entryPrice || !stopLoss) return 0;
