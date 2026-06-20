@@ -152,6 +152,11 @@ const formatPnl = (value: number | null | undefined) => {
   return `P/L ${number}`;
 };
 
+const mergeTradeUpdate = (trade: Trade, values: Partial<Trade>): Trade => ({
+  ...trade,
+  ...values,
+});
+
 function PreTradeChecklistCard({
   checklist,
   onToggle,
@@ -423,7 +428,7 @@ function TradeReviewPageContent() {
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
-    router.replace(`/trade-review?trade=${trade.id}`, { scroll: false });
+    window.history.replaceState(null, "", `/trade-review?trade=${trade.id}`);
     await fetchScreenshots(trade.id);
   };
 
@@ -524,6 +529,9 @@ function TradeReviewPageContent() {
         risk_percent: metrics.risk_percent,
         rr: metrics.rr,
         result: form.result,
+        checklist: limitChecklistForPlan(form.checklist, currentPlan),
+        emotions: PLANS[currentPlan].psychologyTracking ? form.emotions : [],
+        notes: form.notes || null,
         progress_percent: getProgress(selectedTrade) >= 60 ? getProgress(selectedTrade) : 60,
         updated_at: new Date().toISOString(),
       })
@@ -535,7 +543,27 @@ function TradeReviewPageContent() {
       return;
     }
 
-    await fetchTrades();
+    const nextProgress = getProgress(selectedTrade) >= 60 ? getProgress(selectedTrade) : 60;
+    const updatedTrade = mergeTradeUpdate(selectedTrade, {
+      stop_loss: form.stop_loss || null,
+      take_profit: form.take_profit || null,
+      position_size: form.position_size || null,
+      exit_price: form.exit_price || null,
+      pnl: form.pnl ?? 0,
+      risk_percent: metrics.risk_percent,
+      rr: metrics.rr,
+      result: form.result,
+      checklist: limitChecklistForPlan(form.checklist, currentPlan),
+      emotions: PLANS[currentPlan].psychologyTracking ? form.emotions : [],
+      notes: form.notes || null,
+      progress_percent: nextProgress,
+    });
+
+    setSelectedTrade(updatedTrade);
+    setTrades((current) =>
+      current.map((trade) => (trade.id === updatedTrade.id ? updatedTrade : trade)),
+    );
+    setForm(createFormFromTrade(updatedTrade, settings, currentPlan));
     setActivePhase("PHASE_3");
     setSaving(false);
   };
@@ -561,7 +589,18 @@ function TradeReviewPageContent() {
       return;
     }
 
-    await fetchTrades();
+    const updatedTrade = mergeTradeUpdate(selectedTrade, {
+      checklist: limitChecklistForPlan(form.checklist, currentPlan),
+      emotions: PLANS[currentPlan].psychologyTracking ? form.emotions : [],
+      notes: form.notes || null,
+      progress_percent: 100,
+    });
+
+    setSelectedTrade(updatedTrade);
+    setTrades((current) =>
+      current.map((trade) => (trade.id === updatedTrade.id ? updatedTrade : trade)),
+    );
+    setForm(createFormFromTrade(updatedTrade, settings, currentPlan));
     setSaving(false);
   };
 

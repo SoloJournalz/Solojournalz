@@ -2,6 +2,7 @@ type Trade = {
   id: string;
   environment: "LIVE" | "TESTING" | "BACKTESTING" | "CHALLENGE" | null;
   trade_date: string;
+  entry_time: string | null;
   pair: string;
   strategy: string | null;
   result: "WIN" | "LOSS" | "BE" | null;
@@ -31,6 +32,11 @@ const formatPnl = (value?: number | null) => {
 
   if (number > 0) return `P/L +${number}`;
   return `P/L ${number}`;
+};
+
+const formatTradeTime = (value?: string | null) => {
+  if (!value) return "Time N/A";
+  return value;
 };
 
 const getProgress = (trade: Trade) => {
@@ -139,7 +145,7 @@ export default function TradeReviewTradeList({
                   </span>
 
                   <span className="block pt-1 text-xs opacity-75">
-                    {trade.environment || "N/A"} · {trade.result || "N/A"} · {formatPnl(trade.pnl)} · {trade.trade_date}
+                    {trade.environment || "N/A"} · {trade.result || "N/A"} · {formatPnl(trade.pnl)} · {trade.trade_date} · {formatTradeTime(trade.entry_time)}
                   </span>
                 </button>
               );
