@@ -34,9 +34,22 @@ const formatPnl = (value?: number | null) => {
   return `P/L ${number}`;
 };
 
+const formatTradeDate = (value?: string | null) => {
+  if (!value) return "Date N/A";
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
 const formatTradeTime = (value?: string | null) => {
   if (!value) return "Time N/A";
-  return value;
+  return value.slice(0, 5);
 };
 
 const getProgress = (trade: Trade) => {
@@ -45,6 +58,13 @@ const getProgress = (trade: Trade) => {
   }
 
   return 30;
+};
+
+const getResultClass = (result?: "WIN" | "LOSS" | "BE" | null) => {
+  if (result === "WIN") return "text-emerald-700";
+  if (result === "LOSS") return "text-[var(--accent)]";
+  if (result === "BE") return "text-[var(--gold)]";
+  return "text-[var(--text-secondary)]";
 };
 
 export default function TradeReviewTradeList({
@@ -63,9 +83,7 @@ export default function TradeReviewTradeList({
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5 md:flex md:h-full md:min-h-0 md:flex-col">
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">Select a trade</h2>
-        </div>
+        <h2 className="text-xl font-bold tracking-tight">Select a trade</h2>
 
         <button
           type="button"
@@ -123,6 +141,7 @@ export default function TradeReviewTradeList({
           <div className="space-y-2">
             {trades.map((trade, index) => {
               const progress = getProgress(trade);
+              const result = trade.result || "N/A";
 
               return (
                 <button
@@ -144,8 +163,11 @@ export default function TradeReviewTradeList({
                     </span>
                   </span>
 
-                  <span className="block pt-1 text-xs opacity-75">
-                    {trade.environment || "N/A"} · {trade.result || "N/A"} · {formatPnl(trade.pnl)} · {trade.trade_date} · {formatTradeTime(trade.entry_time)}
+                  <span className="block pt-1 text-xs opacity-80">
+                    <span className={selectedTradeId === trade.id ? "text-white" : getResultClass(trade.result)}>
+                      {result}
+                    </span>{" "}
+                    · {formatPnl(trade.pnl)} · {formatTradeDate(trade.trade_date)} · {formatTradeTime(trade.entry_time)}
                   </span>
                 </button>
               );

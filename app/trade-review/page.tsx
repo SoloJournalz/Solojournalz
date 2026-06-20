@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import type { ClipboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Navbar from "@/app/components/layout/navbar";
@@ -10,9 +9,12 @@ import PageLoading from "@/app/components/layout/page-loading";
 import { supabase } from "@/lib/supabase/client";
 import { PLANS, PlanKey } from "@/lib/plans";
 import type { ScreenshotPhase, TradeFormData, TradeProgressPercent } from "@/types/trade";
+import TradeScreenshotCapture from "./components/TradeScreenshotCapture";
 import { calculateTradeMetrics } from "@/types/trade";
 
 import TradeReviewTradeList from "./components/TradeReviewTradeList";
+import PreTradeChecklistCard from "./components/PreTradeChecklistCard";
+import TradeReviewPhaseHeader from "./components/TradeReviewPhaseHeader";
 import TradeDetailsForm from "../trade-log/components/TradeDetailsForm";
 import TradeNotes from "../trade-log/components/TradeNotes";
 import PsychologyPanel from "../trade-log/components/PsychologyPanel";
@@ -84,13 +86,13 @@ const phaseScreenshotConfig: {
     phase: "PHASE_2",
     title: "Execution screenshot",
     expertOnly: true,
-    helper: "Expert only. Capture the trade management while the position is active.",
+    helper: "Expert only. Capture, upload, or paste the trade management screenshot while the position is active.",
   },
   {
     phase: "PHASE_3",
     title: "Review screenshot",
     expertOnly: false,
-    helper: "Free and Expert. Add the post-trade outcome screenshot before completing the review.",
+    helper: "Free and Expert. Capture, upload, or paste the post-trade outcome screenshot before completing the review.",
   },
 ];
 
@@ -145,151 +147,10 @@ const createFormFromTrade = (
   progress_percent: getProgress(trade),
 });
 
-const formatPnl = (value: number | null | undefined) => {
-  if (value === null || value === undefined) return "P/L N/A";
-  const number = Number(value);
-  if (number > 0) return `P/L +${number}`;
-  return `P/L ${number}`;
-};
-
 const mergeTradeUpdate = (trade: Trade, values: Partial<Trade>): Trade => ({
   ...trade,
   ...values,
 });
-
-function PreTradeChecklistCard({
-  checklist,
-  onToggle,
-}: {
-  checklist?: Record<string, boolean> | null;
-  onToggle?: (key: string) => void;
-}) {
-  const entries = Object.entries(checklist || {});
-  const completed = entries.filter(([, checked]) => checked).length;
-
-  return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <h2 className="text-xl font-bold tracking-tight">Pre-trade checklist</h2>
-
-        <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
-          {entries.length ? `${completed}/${entries.length}` : "N/A"}
-        </span>
-      </div>
-
-      {entries.length ? (
-        <div className="grid gap-2">
-          {entries.map(([key, checked]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onToggle?.(key)}
-              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-3 text-left text-sm font-bold transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
-            >
-              <span
-                className={`h-5 w-5 shrink-0 rounded-md border transition ${
-                  checked
-                    ? "border-[var(--accent)] bg-[var(--accent)]"
-                    : "border-[#d8d5cf] bg-white"
-                }`}
-              />
-              <span className="capitalize">{key.replaceAll("_", " ")}</span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <p className="rounded-xl bg-[#efeee9] px-3 py-3 text-sm font-semibold text-[var(--text-secondary)]">
-          Select a saved trade to view its checklist.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function ScreenshotSlot({
-  title,
-  helper,
-  screenshot,
-  locked,
-  saving,
-  onCapture,
-  onPaste,
-  onDelete,
-}: {
-  title: string;
-  helper: string;
-  screenshot?: TradeScreenshot;
-  locked: boolean;
-  saving: boolean;
-  onCapture: () => void;
-  onPaste: (event: ClipboardEvent<HTMLDivElement>) => void;
-  onDelete: () => void;
-}) {
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-bold tracking-tight">{title}</h3>
-          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
-            {helper}
-          </p>
-        </div>
-
-        {locked && (
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[var(--accent)]">
-            Expert
-          </span>
-        )}
-      </div>
-
-      <div
-        tabIndex={locked ? -1 : 0}
-        onPaste={locked ? undefined : onPaste}
-        className="relative flex h-80 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--border)] bg-white text-sm font-semibold text-[var(--text-secondary)] outline-none transition focus:ring-2 focus:ring-[var(--accent)]/20 md:h-[420px]"
-      >
-        {screenshot ? (
-          <a
-            href={screenshot.image_url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-full w-full items-center justify-center"
-          >
-            <img
-              src={screenshot.image_url}
-              alt={title}
-              className="h-full w-full rounded-2xl object-contain"
-            />
-          </a>
-        ) : (
-          <span>{locked ? "Upgrade to add this phase." : "Paste a snip or capture screenshot."}</span>
-        )}
-
-        {!locked && !screenshot && (
-          <button
-            type="button"
-            disabled={saving}
-            onClick={onCapture}
-            className="absolute bottom-4 left-4 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-xl font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.26)] disabled:opacity-60"
-            aria-label={`Add ${title}`}
-          >
-            +
-          </button>
-        )}
-
-        {!locked && screenshot && (
-          <button
-            type="button"
-            disabled={saving}
-            onClick={onDelete}
-            className="absolute bottom-4 right-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-[var(--accent)] shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition hover:-translate-y-0.5 hover:bg-[var(--accent)] hover:text-white disabled:opacity-60"
-          >
-            Delete
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function TradeReviewPageContent() {
   const router = useRouter();
@@ -425,11 +286,15 @@ function TradeReviewPageContent() {
   }, []);
 
   const selectTrade = async (trade: Trade) => {
+    const scrollY = window.scrollY;
+
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
     window.history.replaceState(null, "", `/trade-review?trade=${trade.id}`);
     await fetchScreenshots(trade.id);
+
+    requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: "auto" }));
   };
 
   const filteredTrades = useMemo(() => {
@@ -622,7 +487,7 @@ function TradeReviewPageContent() {
     await fetchTrades();
   };
 
-  const uploadScreenshot = async (phase: ScreenshotPhase, imageUrl: string) => {
+  const uploadScreenshot = async (file: File, phase: ScreenshotPhase) => {
     if (!selectedTrade) return;
     setScreenshotSaving(true);
 
@@ -642,14 +507,13 @@ function TradeReviewPageContent() {
         await supabase.from("trade_screenshots").delete().eq("id", existing.id);
       }
 
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const filePath = `${user.id}/${selectedTrade.id}/${phase}-${crypto.randomUUID()}.jpg`;
+      const extension = file.type.includes("png") ? "png" : "jpg";
+      const filePath = `${user.id}/${selectedTrade.id}/${phase}-${crypto.randomUUID()}.${extension}`;
 
       const { error: uploadError } = await supabase.storage
         .from("trade-screenshots")
-        .upload(filePath, blob, {
-          contentType: "image/jpeg",
+        .upload(filePath, file, {
+          contentType: file.type || "image/jpeg",
           upsert: false,
         });
 
@@ -672,51 +536,6 @@ function TradeReviewPageContent() {
     }
 
     setScreenshotSaving(false);
-  };
-
-  const captureScreenshot = async (phase: ScreenshotPhase) => {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
-
-      const video = document.createElement("video");
-      video.srcObject = stream;
-      video.muted = true;
-      await video.play();
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Could not capture screenshot.");
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      stream.getTracks().forEach((track) => track.stop());
-
-      await uploadScreenshot(phase, canvas.toDataURL("image/jpeg", 0.85));
-    } catch {
-      alert("Screenshot capture cancelled or blocked.");
-    }
-  };
-
-  const handlePasteScreenshot = async (
-    phase: ScreenshotPhase,
-    event: ClipboardEvent<HTMLDivElement>,
-  ) => {
-    const items = event.clipboardData.items;
-
-    for (const item of items) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (!file) return;
-
-        await uploadScreenshot(phase, URL.createObjectURL(file));
-        return;
-      }
-    }
   };
 
   const deleteScreenshot = async (phase: ScreenshotPhase) => {
@@ -752,7 +571,7 @@ function TradeReviewPageContent() {
       <section className="mx-auto max-w-7xl px-5 py-10">
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-medium text-[var(--gold)]">Trade Review Workspace</p>
+            <p className="text-sm font-medium text-[var(--gold)]">Trade Review</p>
 
             <h1 className="mt-2 text-4xl font-bold tracking-tight">Trade Review</h1>
 
@@ -792,42 +611,11 @@ function TradeReviewPageContent() {
               </div>
             ) : (
               <div className="flex flex-col">
-                <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
-                      {activePhase === "PHASE_2" ? "Phase 2 · Execution" : "Phase 3 · Review"}
-                    </p>
-                    <h2 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
-                      {activePhase === "PHASE_2" ? "Execution details" : "Review and reflection"}
-                    </h2>
-                  </div>
-
-                  <div className="grid grid-cols-2 rounded-2xl bg-[#efeee9] p-1 text-sm font-black text-[var(--text-secondary)] lg:w-[340px]">
-                    <button
-                      type="button"
-                      onClick={() => setActivePhase("PHASE_2")}
-                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 ${
-                        activePhase === "PHASE_2"
-                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
-                          : "hover:text-[var(--accent)]"
-                      }`}
-                    >
-                      Phase 2
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActivePhase("PHASE_3")}
-                      disabled={selectedProgress < 60}
-                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
-                        activePhase === "PHASE_3"
-                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
-                          : "hover:text-[var(--accent)]"
-                      }`}
-                    >
-                      Phase 3
-                    </button>
-                  </div>
-                </div>
+                <TradeReviewPhaseHeader
+                  activePhase={activePhase}
+                  selectedProgress={selectedProgress}
+                  onPhaseChange={setActivePhase}
+                />
 
                 <div className="mt-3 flex-1">
                   {activePhase === "PHASE_2" ? (
@@ -843,15 +631,14 @@ function TradeReviewPageContent() {
                       />
 
                       {currentPlan === "EXPERT" ? (
-                        <ScreenshotSlot
+                        <TradeScreenshotCapture
                           title={phaseScreenshotConfig[0].title}
                           helper={phaseScreenshotConfig[0].helper}
+                          phase="PHASE_2"
                           screenshot={screenshotsByPhase.PHASE_2}
-                          locked={false}
                           saving={screenshotSaving}
-                          onCapture={() => captureScreenshot("PHASE_2")}
-                          onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
-                          onDelete={() => deleteScreenshot("PHASE_2")}
+                          onUpload={uploadScreenshot}
+                          onDelete={deleteScreenshot}
                         />
                       ) : (
                         <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)]">
@@ -885,15 +672,14 @@ function TradeReviewPageContent() {
                         onChange={(value) => updateForm("notes", value)}
                       />
 
-                      <ScreenshotSlot
+                      <TradeScreenshotCapture
                         title={phaseScreenshotConfig[1].title}
                         helper={phaseScreenshotConfig[1].helper}
+                        phase="PHASE_3"
                         screenshot={screenshotsByPhase.PHASE_3}
-                        locked={false}
                         saving={screenshotSaving}
-                        onCapture={() => captureScreenshot("PHASE_3")}
-                        onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
-                        onDelete={() => deleteScreenshot("PHASE_3")}
+                        onUpload={uploadScreenshot}
+                        onDelete={deleteScreenshot}
                       />
 
                       <div className="flex justify-end">
