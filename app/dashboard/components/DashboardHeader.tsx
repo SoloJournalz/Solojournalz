@@ -15,15 +15,15 @@ export default function DashboardHeader({
   const isExpert = normalizedPlan === "EXPERT";
 
   return (
-    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+    <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <p className="text-sm text-[var(--gold)]">Dashboard</p>
+        <p className="text-sm font-medium text-[var(--gold)]">Dashboard</p>
 
-        <h2 className="mt-1 text-3xl font-bold tracking-tight md:text-4xl">
+        <h1 className="mt-2 text-4xl font-bold tracking-tight">
           Welcome back, {firstName}
-        </h2>
+        </h1>
 
-        <p className="mt-3 max-w-2xl text-[var(--text-secondary)]">
+        <p className="mt-3 max-w-2xl text-base text-[var(--text-secondary)]">
           {readinessMessage || "Track your trades, performance, and journaling progress."}
         </p>
       </div>

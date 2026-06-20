@@ -22,7 +22,7 @@ export default function DashboardShell({
   const isExpert = String(plan || "FREE").toUpperCase() === "EXPERT";
 
   return (
-    <section className="mx-auto max-w-7xl p-6 md:p-8">
+    <section className="mx-auto max-w-7xl px-5 py-10">
       <DashboardHeader
         firstName={firstName}
         plan={plan}

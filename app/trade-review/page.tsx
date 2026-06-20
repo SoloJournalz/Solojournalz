@@ -423,7 +423,7 @@ function TradeReviewPageContent() {
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
-    router.replace(`/trade-review?trade=${trade.id}`);
+    router.replace(`/trade-review?trade=${trade.id}`, { scroll: false });
     await fetchScreenshots(trade.id);
   };
 
