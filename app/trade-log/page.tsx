@@ -22,22 +22,13 @@ type UserTradeSettings = {
   notes_template: string;
 };
 
-const expertChecklistDefaults: Record<string, boolean> = {
-  news_checked: false,
-  risk_checked: false,
-  plan_confirmed: false,
-  entry_reason_clear: false,
-  stop_loss_defined: false,
-  management_plan_ready: false,
-};
-
 const fallbackSettings: UserTradeSettings = {
   environments: ["LIVE", "TESTING", "BACKTESTING", "CHALLENGE"],
   strategies: ["Breakout", "Reversal", "Continuation"],
   pairs: ["EUR/USD", "GBP/USD", "XAU/USD"],
   trade_types: ["Scalp", "Day Trade", "Swing"],
   emotions: ["calm", "focused", "anxious", "revenge", "tilt"],
-  checklist: expertChecklistDefaults,
+  checklist: {},
   notes_template: "",
 };
 
@@ -54,16 +45,10 @@ const getCurrentTime = () => {
 const limitChecklistForPlan = (
   checklist: Record<string, boolean>,
   plan: PlanKey,
-) => {
-  const mergedChecklist =
-    plan === "EXPERT"
-      ? { ...expertChecklistDefaults, ...checklist }
-      : checklist;
-
-  return Object.fromEntries(
-    Object.entries(mergedChecklist).slice(0, PLANS[plan].checklistItems),
+) =>
+  Object.fromEntries(
+    Object.entries(checklist).slice(0, PLANS[plan].checklistItems),
   );
-};
 
 const createInitialForm = (
   settings: UserTradeSettings = fallbackSettings,
@@ -336,19 +321,24 @@ function TradeLogPageContent() {
     <main className="min-h-screen overflow-y-auto bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:py-4">
-        <div className="mb-4">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
-            Phase 1 · 30% Capture
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight md:text-[28px]">
-            Trade Log
-          </h1>
-          <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
-            Capture the setup quickly. Execution and final review happen in Trade Review.
-          </p>
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 lg:px-6">
+        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-sm font-medium text-[var(--gold)]">Trade Log</p>
+
+            <h1 className="mt-2 text-4xl font-bold tracking-tight">Trade Log</h1>
+
+            <p className="mt-3 max-w-2xl text-base text-[var(--text-secondary)]">
+              Capture the setup quickly. Execution, screenshots, and final review happen in Trade Review.
+            </p>
+          </div>
+
+          <span className="w-fit rounded-full border border-[var(--gold)]/30 bg-[var(--gold)]/10 px-4 py-2 text-xs font-bold tracking-wide text-[var(--gold)]">
+            PHASE 1 · 30% CAPTURE
+          </span>
         </div>
 
+        <div className="space-y-4">
         <TradeDetailsForm
           form={form}
           settings={settings}
@@ -359,7 +349,7 @@ function TradeLogPageContent() {
           updateNumber={updateNumber}
         />
 
-        <div className="mx-auto mt-3 grid max-w-5xl gap-3">
+        <div className="grid gap-4">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
@@ -464,6 +454,7 @@ function TradeLogPageContent() {
             onSave={handleSaveTrade}
           />
         )}
+        </div>
       </section>
     </main>
   );

@@ -60,22 +60,17 @@ type UserTradeSettings = {
   notes_template: string;
 };
 
-const expertChecklistDefaults: Record<string, boolean> = {
-  news_checked: false,
-  risk_checked: false,
-  plan_confirmed: false,
-  entry_reason_clear: false,
-  stop_loss_defined: false,
-  management_plan_ready: false,
-};
-
 const fallbackSettings: UserTradeSettings = {
   environments: ["LIVE", "TESTING", "BACKTESTING", "CHALLENGE"],
   strategies: ["Breakout", "Reversal", "Continuation"],
   pairs: ["EUR/USD", "GBP/USD", "XAU/USD"],
   trade_types: ["Scalp", "Day Trade", "Swing"],
   emotions: ["calm", "focused", "anxious", "revenge", "tilt"],
-  checklist: expertChecklistDefaults,
+  checklist: {
+    a_plus_setup: true,
+    htf_bias_confirmed: false,
+    rr_greater_than_2: false,
+  },
   notes_template: "",
 };
 
@@ -105,16 +100,10 @@ const toInputValue = (value: number | null | undefined) =>
 const limitChecklistForPlan = (
   checklist: Record<string, boolean>,
   plan: PlanKey,
-) => {
-  const mergedChecklist =
-    plan === "EXPERT"
-      ? { ...expertChecklistDefaults, ...checklist }
-      : checklist;
-
-  return Object.fromEntries(
-    Object.entries(mergedChecklist).slice(0, PLANS[plan].checklistItems),
+) =>
+  Object.fromEntries(
+    Object.entries(checklist).slice(0, PLANS[plan].checklistItems),
   );
-};
 
 const getProgress = (trade: Trade | null | undefined): TradeProgressPercent => {
   if (trade?.progress_percent === 100 || trade?.progress_percent === 60) {
@@ -165,12 +154,8 @@ const formatPnl = (value: number | null | undefined) => {
 
 function PreTradeChecklistCard({
   checklist,
-  onToggle,
-  disabled = false,
 }: {
   checklist?: Record<string, boolean> | null;
-  onToggle?: (key: string) => void;
-  disabled?: boolean;
 }) {
   const entries = Object.entries(checklist || {});
   const completed = entries.filter(([, checked]) => checked).length;
@@ -193,12 +178,9 @@ function PreTradeChecklistCard({
       {entries.length ? (
         <div className="grid gap-2">
           {entries.map(([key, checked]) => (
-            <button
+            <div
               key={key}
-              type="button"
-              disabled={disabled || !onToggle}
-              onClick={() => onToggle?.(key)}
-              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-left text-sm font-bold transition hover:-translate-y-0.5 hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-sm font-bold"
             >
               <span
                 className={`h-5 w-5 shrink-0 rounded-md border transition ${
@@ -208,7 +190,7 @@ function PreTradeChecklistCard({
                 }`}
               />
               <span className="capitalize">{key.replaceAll("_", " ")}</span>
-            </button>
+            </div>
           ))}
         </div>
       ) : (
@@ -340,8 +322,8 @@ function TradeReviewPageContent() {
     setScreenshots((data || []) as TradeScreenshot[]);
   };
 
-  const fetchTrades = async (showLoading = true, preferredTradeId?: string) => {
-    if (showLoading) setLoading(true);
+  const fetchTrades = async () => {
+    setLoading(true);
 
     const {
       data: { user },
@@ -349,7 +331,7 @@ function TradeReviewPageContent() {
 
     if (!user) {
       router.replace("/login");
-      if (showLoading) setLoading(false);
+      setLoading(false);
       return;
     }
 
@@ -418,7 +400,7 @@ function TradeReviewPageContent() {
     setTrades(safeTrades);
 
     const selected =
-      safeTrades.find((trade) => trade.id === (preferredTradeId || tradeParam)) || safeTrades[0] || null;
+      safeTrades.find((trade) => trade.id === tradeParam) || safeTrades[0] || null;
 
     setSelectedTrade(selected);
     setForm(selected ? createFormFromTrade(selected, loadedSettings, resolvedPlan) : null);
@@ -435,13 +417,13 @@ function TradeReviewPageContent() {
 
   useEffect(() => {
     fetchTrades();
-  }, []);
+  }, [tradeParam]);
 
   const selectTrade = async (trade: Trade) => {
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
-    window.history.replaceState(null, "", `/trade-review?trade=${trade.id}`);
+    router.replace(`/trade-review?trade=${trade.id}`);
     await fetchScreenshots(trade.id);
   };
 
@@ -542,7 +524,6 @@ function TradeReviewPageContent() {
         risk_percent: metrics.risk_percent,
         rr: metrics.rr,
         result: form.result,
-        checklist: limitChecklistForPlan(form.checklist, currentPlan),
         progress_percent: getProgress(selectedTrade) >= 60 ? getProgress(selectedTrade) : 60,
         updated_at: new Date().toISOString(),
       })
@@ -554,8 +535,7 @@ function TradeReviewPageContent() {
       return;
     }
 
-    setSelectedTrade((current) => current ? { ...current, progress_percent: getProgress(current) >= 60 ? getProgress(current) : 60 } : current);
-    await fetchTrades(false, selectedTrade.id);
+    await fetchTrades();
     setActivePhase("PHASE_3");
     setSaving(false);
   };
@@ -581,8 +561,7 @@ function TradeReviewPageContent() {
       return;
     }
 
-    setSelectedTrade((current) => current ? { ...current, checklist: limitChecklistForPlan(form.checklist, currentPlan), emotions: PLANS[currentPlan].psychologyTracking ? form.emotions : [], notes: form.notes || null, progress_percent: 100 } : current);
-    await fetchTrades(false, selectedTrade.id);
+    await fetchTrades();
     setSaving(false);
   };
 
@@ -731,25 +710,24 @@ function TradeReviewPageContent() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:py-4">
-        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 lg:px-6">
+        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
-              Trade Review Workspace
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight md:text-[28px]">
-              Trade Review
-            </h1>
-            <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+            <p className="text-sm font-medium text-[var(--gold)]">Trade Review Workspace</p>
+
+            <h1 className="mt-2 text-4xl font-bold tracking-tight">Trade Review</h1>
+
+            <p className="mt-3 max-w-2xl text-base text-[var(--text-secondary)]">
               Select a trade, finish execution, then complete the review.
             </p>
           </div>
-          <span className="w-fit rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
-            {selectedTrade ? `${selectedProgress}% complete` : "Select trade"}
+
+          <span className="w-fit rounded-full border border-[var(--gold)]/30 bg-[var(--gold)]/10 px-4 py-2 text-xs font-bold tracking-wide text-[var(--gold)]">
+            {selectedTrade ? `${selectedProgress}% COMPLETE` : "SELECT TRADE"}
           </span>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:grid-cols-[330px_minmax(0,1fr)] xl:grid-cols-[350px_minmax(0,1fr)]">
           <aside className="space-y-3 md:sticky md:top-[88px] md:self-start">
             <TradeReviewTradeList
               trades={filteredTrades || []}
@@ -765,63 +743,63 @@ function TradeReviewPageContent() {
               onDeleteTrade={deleteSelectedTrade}
             />
 
-            <PreTradeChecklistCard checklist={form?.checklist} onToggle={toggleChecklist} disabled={!form} />
+            <PreTradeChecklistCard checklist={selectedTrade?.checklist || form?.checklist} />
           </aside>
 
-          <section className="space-y-3">
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             {!selectedTrade || !form ? (
-              <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card)] text-sm font-semibold text-[var(--text-secondary)] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+              <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[#efeee9] text-sm font-semibold text-[var(--text-secondary)] md:h-full md:min-h-0">
                 Select a trade to review.
               </div>
             ) : (
-              <>
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-                  <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
-                        {activePhase === "PHASE_2" ? "Phase 2 · Execution" : "Phase 3 · Review"}
-                      </p>
-                      <h2 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
-                        {activePhase === "PHASE_2" ? "Execution details" : "Review and reflection"}
-                      </h2>
-                    </div>
-
-                    <div className="grid grid-cols-2 rounded-2xl bg-[#efeee9] p-1 text-sm font-black text-[var(--text-secondary)] lg:w-[340px]">
-                      <button
-                        type="button"
-                        onClick={() => setActivePhase("PHASE_2")}
-                        className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 ${
-                          activePhase === "PHASE_2"
-                            ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
-                            : "hover:text-[var(--accent)]"
-                        }`}
-                      >
-                        Phase 2
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActivePhase("PHASE_3")}
-                        disabled={selectedProgress < 60}
-                        className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
-                          activePhase === "PHASE_3"
-                            ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
-                            : "hover:text-[var(--accent)]"
-                        }`}
-                      >
-                        Phase 3
-                      </button>
-                    </div>
+              <div className="flex flex-col">
+                <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--gold)]">
+                      {activePhase === "PHASE_2" ? "Phase 2 · Execution" : "Phase 3 · Review"}
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
+                      {activePhase === "PHASE_2" ? "Execution details" : "Review and reflection"}
+                    </h2>
                   </div>
 
-                  <div className="h-2 shrink-0 overflow-hidden rounded-full bg-[#efeee9]">
-                    <div
-                      className="h-full rounded-full bg-[var(--accent)] transition-all"
-                      style={{ width: `${selectedProgress}%` }}
-                    />
+                  <div className="grid grid-cols-2 rounded-2xl bg-[#efeee9] p-1 text-sm font-black text-[var(--text-secondary)] lg:w-[340px]">
+                    <button
+                      type="button"
+                      onClick={() => setActivePhase("PHASE_2")}
+                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 ${
+                        activePhase === "PHASE_2"
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
+                          : "hover:text-[var(--accent)]"
+                      }`}
+                    >
+                      Phase 2
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActivePhase("PHASE_3")}
+                      disabled={selectedProgress < 60}
+                      className={`rounded-xl px-4 py-2.5 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
+                        activePhase === "PHASE_3"
+                          ? "bg-[var(--accent)] text-white shadow-[0_8px_20px_rgba(110,17,17,0.18)]"
+                          : "hover:text-[var(--accent)]"
+                      }`}
+                    >
+                      Phase 3
+                    </button>
                   </div>
+                </div>
 
-                  <div className="mt-3">
-                    {activePhase === "PHASE_2" ? (
+                <div className="h-2 shrink-0 overflow-hidden rounded-full bg-[#efeee9]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)] transition-all"
+                    style={{ width: `${selectedProgress}%` }}
+                  />
+                </div>
+
+                <div className="mt-3 flex-1">
+                  {activePhase === "PHASE_2" ? (
+                    <div className="space-y-3">
                       <TradeDetailsForm
                         form={form}
                         settings={settings}
@@ -831,74 +809,75 @@ function TradeReviewPageContent() {
                         updateForm={updateForm}
                         updateNumber={updateNumber}
                       />
-                    ) : (
-                      <div className="space-y-3">
-                        {PLANS[currentPlan].psychologyTracking && (
-                          <PsychologyPanel
-                            emotions={settings.emotions}
-                            selectedEmotions={form.emotions}
-                            onSelect={setEmotion}
-                          />
-                        )}
 
-                        <TradeNotes
-                          value={form.notes ?? ""}
-                          onChange={(value) => updateForm("notes", value)}
+                      {currentPlan === "EXPERT" ? (
+                        <ScreenshotSlot
+                          title={phaseScreenshotConfig[0].title}
+                          helper={phaseScreenshotConfig[0].helper}
+                          screenshot={screenshotsByPhase.PHASE_2}
+                          locked={false}
+                          saving={screenshotSaving}
+                          onCapture={() => captureScreenshot("PHASE_2")}
+                          onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
+                          onDelete={() => deleteScreenshot("PHASE_2")}
                         />
+                      ) : (
+                        <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)]">
+                          Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep screenshot capture for Phase 3 review.
+                        </div>
+                      )}
+
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={savePhase2}
+                          className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
+                        >
+                          {saving ? "Saving..." : selectedProgress >= 60 ? "Save Changes" : "Save Phase 2"}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {activePhase === "PHASE_2" ? (
-                  currentPlan === "EXPERT" ? (
-                    <ScreenshotSlot
-                      title={phaseScreenshotConfig[0].title}
-                      helper={phaseScreenshotConfig[0].helper}
-                      screenshot={screenshotsByPhase.PHASE_2}
-                      locked={false}
-                      saving={screenshotSaving}
-                      onCapture={() => captureScreenshot("PHASE_2")}
-                      onPaste={(event) => handlePasteScreenshot("PHASE_2", event)}
-                      onDelete={() => deleteScreenshot("PHASE_2")}
-                    />
-                  ) : (
-                    <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)] shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-                      Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep screenshot capture for Phase 3 review.
                     </div>
-                  )
-                ) : (
-                  <ScreenshotSlot
-                    title={phaseScreenshotConfig[1].title}
-                    helper={phaseScreenshotConfig[1].helper}
-                    screenshot={screenshotsByPhase.PHASE_3}
-                    locked={false}
-                    saving={screenshotSaving}
-                    onCapture={() => captureScreenshot("PHASE_3")}
-                    onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
-                    onDelete={() => deleteScreenshot("PHASE_3")}
-                  />
-                )}
+                  ) : (
+                    <div className="space-y-3">
+                      {PLANS[currentPlan].psychologyTracking && (
+                        <PsychologyPanel
+                          emotions={settings.emotions}
+                          selectedEmotions={form.emotions}
+                          onSelect={setEmotion}
+                        />
+                      )}
 
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={activePhase === "PHASE_2" ? savePhase2 : savePhase3}
-                    className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
-                  >
-                    {saving
-                      ? "Saving..."
-                      : activePhase === "PHASE_2"
-                        ? selectedProgress >= 60
-                          ? "Save Changes"
-                          : "Save Phase 2"
-                        : selectedProgress >= 100
-                          ? "Save Changes"
-                          : "Complete Trade"}
-                  </button>
+                      <TradeNotes
+                        value={form.notes ?? ""}
+                        onChange={(value) => updateForm("notes", value)}
+                      />
+
+                      <ScreenshotSlot
+                        title={phaseScreenshotConfig[1].title}
+                        helper={phaseScreenshotConfig[1].helper}
+                        screenshot={screenshotsByPhase.PHASE_3}
+                        locked={false}
+                        saving={screenshotSaving}
+                        onCapture={() => captureScreenshot("PHASE_3")}
+                        onPaste={(event) => handlePasteScreenshot("PHASE_3", event)}
+                        onDelete={() => deleteScreenshot("PHASE_3")}
+                      />
+
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={savePhase3}
+                          className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
+                        >
+                          {saving ? "Saving..." : selectedProgress >= 100 ? "Save Changes" : "Complete Trade"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </>
+              </div>
             )}
           </section>
         </div>
