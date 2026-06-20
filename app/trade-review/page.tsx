@@ -8,8 +8,7 @@ import PageLoading from "@/app/components/layout/page-loading";
 
 import { supabase } from "@/lib/supabase/client";
 import { PLANS, PlanKey } from "@/lib/plans";
-import type { ScreenshotPhase, TradeFormData, TradeProgressPercent } from "@/types/trade";
-import TradeScreenshotCapture from "./components/TradeScreenshotCapture";
+import type { TradeFormData, TradeProgressPercent } from "@/types/trade";
 import { calculateTradeMetrics } from "@/types/trade";
 
 import TradeReviewTradeList from "./components/TradeReviewTradeList";
@@ -44,14 +43,6 @@ type Trade = {
   created_at: string;
 };
 
-type TradeScreenshot = {
-  id: string;
-  trade_id: string;
-  image_url: string;
-  phase: ScreenshotPhase | null;
-  created_at: string;
-};
-
 type UserTradeSettings = {
   environments: string[];
   strategies: string[];
@@ -75,26 +66,6 @@ const fallbackSettings: UserTradeSettings = {
   },
   notes_template: "",
 };
-
-const phaseScreenshotConfig: {
-  phase: ScreenshotPhase;
-  title: string;
-  expertOnly: boolean;
-  helper: string;
-}[] = [
-  {
-    phase: "PHASE_2",
-    title: "Execution screenshot",
-    expertOnly: true,
-    helper: "Expert only. Capture, upload, or paste the trade management screenshot while the position is active.",
-  },
-  {
-    phase: "PHASE_3",
-    title: "Review screenshot",
-    expertOnly: false,
-    helper: "Free and Expert. Capture, upload, or paste the post-trade outcome screenshot before completing the review.",
-  },
-];
 
 const toInputValue = (value: number | null | undefined) =>
   value === null || value === undefined ? 0 : Number(value);
@@ -160,7 +131,6 @@ function TradeReviewPageContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [form, setForm] = useState<TradeFormData | null>(null);
-  const [screenshots, setScreenshots] = useState<TradeScreenshot[]>([]);
   const [settings, setSettings] = useState<UserTradeSettings>(fallbackSettings);
 
   const [search, setSearch] = useState("");
@@ -168,24 +138,8 @@ function TradeReviewPageContent() {
   const [environmentFilter, setEnvironmentFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [screenshotSaving, setScreenshotSaving] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<PlanKey>("FREE");
   const [activePhase, setActivePhase] = useState<"PHASE_2" | "PHASE_3">("PHASE_2");
-
-  const fetchScreenshots = async (tradeId: string) => {
-    const { data, error } = await supabase
-      .from("trade_screenshots")
-      .select("*")
-      .eq("trade_id", tradeId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      setScreenshots([]);
-      return;
-    }
-
-    setScreenshots((data || []) as TradeScreenshot[]);
-  };
 
   const fetchTrades = async () => {
     setLoading(true);
@@ -271,11 +225,6 @@ function TradeReviewPageContent() {
     setForm(selected ? createFormFromTrade(selected, loadedSettings, resolvedPlan) : null);
     setActivePhase(getProgress(selected) >= 60 ? "PHASE_3" : "PHASE_2");
 
-    if (selected) {
-      await fetchScreenshots(selected.id);
-    } else {
-      setScreenshots([]);
-    }
 
     setLoading(false);
   };
@@ -292,8 +241,6 @@ function TradeReviewPageContent() {
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
     window.history.replaceState(null, "", `/trade-review?trade=${trade.id}`);
-    await fetchScreenshots(trade.id);
-
     requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: "auto" }));
   };
 
@@ -483,82 +430,11 @@ function TradeReviewPageContent() {
       return;
     }
 
-    setScreenshots([]);
     await fetchTrades();
   };
 
-  const uploadScreenshot = async (file: File, phase: ScreenshotPhase) => {
-    if (!selectedTrade) return;
-    setScreenshotSaving(true);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert("Not logged in. Please sign in again.");
-      setScreenshotSaving(false);
-      return;
-    }
-
-    try {
-      const existing = screenshots.find((shot) => shot.phase === phase);
-      if (existing) {
-        await supabase.from("trade_screenshots").delete().eq("id", existing.id);
-      }
-
-      const extension = file.type.includes("png") ? "png" : "jpg";
-      const filePath = `${user.id}/${selectedTrade.id}/${phase}-${crypto.randomUUID()}.${extension}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("trade-screenshots")
-        .upload(filePath, file, {
-          contentType: file.type || "image/jpeg",
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("trade-screenshots").getPublicUrl(filePath);
-
-      const { error: dbError } = await supabase.from("trade_screenshots").insert({
-        trade_id: selectedTrade.id,
-        image_url: publicUrl,
-        phase,
-      });
-
-      if (dbError) throw dbError;
-      await fetchScreenshots(selectedTrade.id);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Screenshot upload failed.");
-    }
-
-    setScreenshotSaving(false);
-  };
-
-  const deleteScreenshot = async (phase: ScreenshotPhase) => {
-    const screenshot = screenshots.find((shot) => shot.phase === phase);
-    if (!screenshot) return;
-
-    const { error } = await supabase
-      .from("trade_screenshots")
-      .delete()
-      .eq("id", screenshot.id);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    if (selectedTrade) await fetchScreenshots(selectedTrade.id);
-  };
-
   const selectedProgress = getProgress(selectedTrade);
-  const screenshotsByPhase = Object.fromEntries(
-    screenshots.map((screenshot) => [screenshot.phase || "PHASE_3", screenshot]),
-  ) as Partial<Record<ScreenshotPhase, TradeScreenshot>>;
+
 
   if (loading) {
     return <PageLoading label="Loading Review Workspace" workspace />;
@@ -630,22 +506,6 @@ function TradeReviewPageContent() {
                         updateNumber={updateNumber}
                       />
 
-                      {currentPlan === "EXPERT" ? (
-                        <TradeScreenshotCapture
-                          title={phaseScreenshotConfig[0].title}
-                          helper={phaseScreenshotConfig[0].helper}
-                          phase="PHASE_2"
-                          screenshot={screenshotsByPhase.PHASE_2}
-                          saving={screenshotSaving}
-                          onUpload={uploadScreenshot}
-                          onDelete={deleteScreenshot}
-                        />
-                      ) : (
-                        <div className="rounded-2xl border border-[var(--border)] bg-[#efeee9] p-5 text-sm font-semibold text-[var(--text-secondary)]">
-                          Upgrade to Expert to unlock Phase 2 execution screenshots. Free users keep screenshot capture for Phase 3 review.
-                        </div>
-                      )}
-
                       <div className="flex justify-end">
                         <button
                           type="button"
@@ -670,16 +530,6 @@ function TradeReviewPageContent() {
                       <TradeNotes
                         value={form.notes ?? ""}
                         onChange={(value) => updateForm("notes", value)}
-                      />
-
-                      <TradeScreenshotCapture
-                        title={phaseScreenshotConfig[1].title}
-                        helper={phaseScreenshotConfig[1].helper}
-                        phase="PHASE_3"
-                        screenshot={screenshotsByPhase.PHASE_3}
-                        saving={screenshotSaving}
-                        onUpload={uploadScreenshot}
-                        onDelete={deleteScreenshot}
                       />
 
                       <div className="flex justify-end">
