@@ -337,15 +337,15 @@ function TradeLogPageContent() {
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
       <section className="mx-auto max-w-5xl px-4 py-4 sm:px-5 md:py-4">
-        <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
+        <div className="mb-4">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
             Phase 1 · 30% Capture
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight">
-            Fast Trade Log
+          <h1 className="mt-1 text-2xl font-bold tracking-tight md:text-[28px]">
+            Trade Log
           </h1>
           <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
-            Capture the setup quickly. Execution, screenshots, and final review happen in Trade Review.
+            Capture the setup quickly. Execution and final review happen in Trade Review.
           </p>
         </div>
 

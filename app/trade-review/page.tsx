@@ -165,8 +165,12 @@ const formatPnl = (value: number | null | undefined) => {
 
 function PreTradeChecklistCard({
   checklist,
+  onToggle,
+  disabled = false,
 }: {
   checklist?: Record<string, boolean> | null;
+  onToggle?: (key: string) => void;
+  disabled?: boolean;
 }) {
   const entries = Object.entries(checklist || {});
   const completed = entries.filter(([, checked]) => checked).length;
@@ -189,9 +193,12 @@ function PreTradeChecklistCard({
       {entries.length ? (
         <div className="grid gap-2">
           {entries.map(([key, checked]) => (
-            <div
+            <button
               key={key}
-              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-sm font-bold"
+              type="button"
+              disabled={disabled || !onToggle}
+              onClick={() => onToggle?.(key)}
+              className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#efeee9] px-3 py-2 text-left text-sm font-bold transition hover:-translate-y-0.5 hover:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               <span
                 className={`h-5 w-5 shrink-0 rounded-md border transition ${
@@ -201,7 +208,7 @@ function PreTradeChecklistCard({
                 }`}
               />
               <span className="capitalize">{key.replaceAll("_", " ")}</span>
-            </div>
+            </button>
           ))}
         </div>
       ) : (
@@ -333,8 +340,8 @@ function TradeReviewPageContent() {
     setScreenshots((data || []) as TradeScreenshot[]);
   };
 
-  const fetchTrades = async () => {
-    setLoading(true);
+  const fetchTrades = async (showLoading = true, preferredTradeId?: string) => {
+    if (showLoading) setLoading(true);
 
     const {
       data: { user },
@@ -342,7 +349,7 @@ function TradeReviewPageContent() {
 
     if (!user) {
       router.replace("/login");
-      setLoading(false);
+      if (showLoading) setLoading(false);
       return;
     }
 
@@ -411,7 +418,7 @@ function TradeReviewPageContent() {
     setTrades(safeTrades);
 
     const selected =
-      safeTrades.find((trade) => trade.id === tradeParam) || safeTrades[0] || null;
+      safeTrades.find((trade) => trade.id === (preferredTradeId || tradeParam)) || safeTrades[0] || null;
 
     setSelectedTrade(selected);
     setForm(selected ? createFormFromTrade(selected, loadedSettings, resolvedPlan) : null);
@@ -428,13 +435,13 @@ function TradeReviewPageContent() {
 
   useEffect(() => {
     fetchTrades();
-  }, [tradeParam]);
+  }, []);
 
   const selectTrade = async (trade: Trade) => {
     setSelectedTrade(trade);
     setForm(createFormFromTrade(trade, settings, currentPlan));
     setActivePhase(getProgress(trade) >= 60 ? "PHASE_3" : "PHASE_2");
-    router.replace(`/trade-review?trade=${trade.id}`);
+    window.history.replaceState(null, "", `/trade-review?trade=${trade.id}`);
     await fetchScreenshots(trade.id);
   };
 
@@ -535,6 +542,7 @@ function TradeReviewPageContent() {
         risk_percent: metrics.risk_percent,
         rr: metrics.rr,
         result: form.result,
+        checklist: limitChecklistForPlan(form.checklist, currentPlan),
         progress_percent: getProgress(selectedTrade) >= 60 ? getProgress(selectedTrade) : 60,
         updated_at: new Date().toISOString(),
       })
@@ -546,7 +554,8 @@ function TradeReviewPageContent() {
       return;
     }
 
-    await fetchTrades();
+    setSelectedTrade((current) => current ? { ...current, progress_percent: getProgress(current) >= 60 ? getProgress(current) : 60 } : current);
+    await fetchTrades(false, selectedTrade.id);
     setActivePhase("PHASE_3");
     setSaving(false);
   };
@@ -572,7 +581,8 @@ function TradeReviewPageContent() {
       return;
     }
 
-    await fetchTrades();
+    setSelectedTrade((current) => current ? { ...current, checklist: limitChecklistForPlan(form.checklist, currentPlan), emotions: PLANS[currentPlan].psychologyTracking ? form.emotions : [], notes: form.notes || null, progress_percent: 100 } : current);
+    await fetchTrades(false, selectedTrade.id);
     setSaving(false);
   };
 
@@ -722,26 +732,24 @@ function TradeReviewPageContent() {
       <Navbar />
 
       <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 md:py-4">
-        <div className="mb-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] md:p-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
-            Trade Review Workspace
-          </p>
-          <div className="mt-1 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight md:text-[26px]">
-                Complete one phase at a time
-              </h1>
-              <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
-                Select a saved trade, finish Phase 2 execution, then complete Phase 3 review.
-              </p>
-            </div>
-            <span className="w-fit rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
-              {selectedTrade ? `${selectedProgress}% complete` : "Select trade"}
-            </span>
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent)]">
+              Trade Review Workspace
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight md:text-[28px]">
+              Trade Review
+            </h1>
+            <p className="mt-1 text-sm font-medium text-[var(--text-secondary)] md:text-[13px]">
+              Select a trade, finish execution, then complete the review.
+            </p>
           </div>
+          <span className="w-fit rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
+            {selectedTrade ? `${selectedProgress}% complete` : "Select trade"}
+          </span>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
+        <div className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
           <aside className="space-y-3 md:sticky md:top-[88px] md:self-start">
             <TradeReviewTradeList
               trades={filteredTrades || []}
@@ -757,7 +765,7 @@ function TradeReviewPageContent() {
               onDeleteTrade={deleteSelectedTrade}
             />
 
-            <PreTradeChecklistCard checklist={selectedTrade?.checklist || form?.checklist} />
+            <PreTradeChecklistCard checklist={form?.checklist} onToggle={toggleChecklist} disabled={!form} />
           </aside>
 
           <section className="space-y-3">
@@ -872,25 +880,23 @@ function TradeReviewPageContent() {
                   />
                 )}
 
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={activePhase === "PHASE_2" ? savePhase2 : savePhase3}
-                      className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
-                    >
-                      {saving
-                        ? "Saving..."
-                        : activePhase === "PHASE_2"
-                          ? selectedProgress >= 60
-                            ? "Save Changes"
-                            : "Save Phase 2"
-                          : selectedProgress >= 100
-                            ? "Save Changes"
-                            : "Complete Trade"}
-                    </button>
-                  </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={activePhase === "PHASE_2" ? savePhase2 : savePhase3}
+                    className="w-full rounded-2xl bg-[var(--accent)] px-8 py-3 font-semibold text-white shadow-[0_10px_25px_rgba(110,17,17,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(110,17,17,0.24)] disabled:opacity-60 sm:w-auto"
+                  >
+                    {saving
+                      ? "Saving..."
+                      : activePhase === "PHASE_2"
+                        ? selectedProgress >= 60
+                          ? "Save Changes"
+                          : "Save Phase 2"
+                        : selectedProgress >= 100
+                          ? "Save Changes"
+                          : "Complete Trade"}
+                  </button>
                 </div>
               </>
             )}
