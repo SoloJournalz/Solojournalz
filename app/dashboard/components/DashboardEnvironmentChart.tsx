@@ -33,7 +33,7 @@ export default function DashboardEnvironmentChart({ analytics }: DashboardEnviro
   return (
     <div className="mt-4">
       <AnalyticsPanel
-        title="Environment Edge"
+        title="Best Environment"
         subtitle="A cleaner comparison of where your current results are coming from. Keep the equity curve for direction; use this for environment quality."
       >
         {data.length === 0 ? (

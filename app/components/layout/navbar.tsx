@@ -43,7 +43,9 @@ function NavbarInner({
   const isEditMode = Boolean(searchParams.get("edit"));
 
   useEffect(() => {
-    links.forEach((link) => router.prefetch(link.href));
+    links.forEach((link) => {
+      if (link.href !== "/dashboard") router.prefetch(link.href);
+    });
   }, [router]);
 
   useEffect(() => {
@@ -100,6 +102,10 @@ function NavbarInner({
 
     setPendingHref(href);
     setShowTransitionLoader(true);
+
+    if (href === "/dashboard") {
+      router.refresh();
+    }
   };
 
   return (
@@ -125,9 +131,9 @@ function NavbarInner({
                 <Link
                   key={link.href}
                   href={link.href}
-                  prefetch
-                  onMouseEnter={() => router.prefetch(link.href)}
-                  onFocus={() => router.prefetch(link.href)}
+                  prefetch={link.href === "/dashboard" ? false : undefined}
+                  onMouseEnter={() => { if (link.href !== "/dashboard") router.prefetch(link.href); }}
+                  onFocus={() => { if (link.href !== "/dashboard") router.prefetch(link.href); }}
                   onClick={(event) => handleNavigate(link.href, event)}
                   aria-current={active ? "page" : undefined}
                   className={
@@ -171,7 +177,7 @@ function NavbarInner({
                   <Link
                     key={link.href}
                     href={link.href}
-                    prefetch
+                    prefetch={link.href === "/dashboard" ? false : undefined}
                     onClick={(event) => handleNavigate(link.href, event)}
                     className={
                       active

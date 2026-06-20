@@ -73,9 +73,7 @@ const createInitialForm = (
   result: "BE",
   notes: "",
   checklist: limitChecklistForPlan(settings.checklist || {}, plan),
-  emotions: PLANS[plan].psychologyTracking
-    ? [settings.emotions[0] || "focused"]
-    : [],
+  emotions: [],
   progress_percent: 30,
 });
 
@@ -222,11 +220,6 @@ function TradeLogPageContent() {
     markDirty();
   };
 
-  const setEmotion = (emotion: string) => {
-    setForm((current) => ({ ...current, emotions: [emotion] }));
-    markDirty();
-  };
-
   const handleSaveTrade = async () => {
     setSaveError("");
     setSaving(true);
@@ -286,7 +279,7 @@ function TradeLogPageContent() {
       direction: form.direction,
       entry_price: form.entry_price || null,
       checklist: limitChecklistForPlan(form.checklist, latestPlan),
-      emotions: PLANS[latestPlan].psychologyTracking ? form.emotions : [],
+      emotions: [],
       progress_percent: 30,
     };
 
@@ -379,35 +372,6 @@ function TradeLogPageContent() {
               ))}
             </div>
           </section>
-
-          {PLANS[currentPlan].psychologyTracking ? (
-            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-                Expert psychology
-              </p>
-              <h2 className="mt-1 text-lg font-bold tracking-tight">Entry emotion</h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {settings.emotions.map((emotion) => {
-                  const active = form.emotions.includes(emotion);
-
-                  return (
-                    <button
-                      key={emotion}
-                      type="button"
-                      onClick={() => setEmotion(emotion)}
-                      className={`rounded-full px-3 py-2 text-xs font-black transition hover:-translate-y-0.5 ${
-                        active
-                          ? "bg-[var(--accent)] text-white shadow-[0_8px_18px_rgba(110,17,17,0.18)]"
-                          : "bg-[#efeee9] text-[var(--text-secondary)] hover:text-[var(--accent)]"
-                      }`}
-                    >
-                      {emotion}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ) : null}
         </div>
 
         {saveError && (

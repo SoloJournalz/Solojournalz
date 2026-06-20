@@ -99,11 +99,14 @@ const settingsTemplates = {
     pairs: ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"],
     strategies: ["Breakout", "Trend Continuation", "Reversal"],
     trade_types: ["Scalp", "Day Trade", "Swing"],
-    emotions: ["Calm", "Confident", "Impatient"],
+    emotions: ["Calm", "Confident", "Impatient", "Focused", "Anxious", "Revenge"],
     checklist: {
       news_checked: false,
       risk_checked: false,
       plan_confirmed: false,
+      session_confirmed: false,
+      higher_timeframe_bias_checked: false,
+      trade_management_plan_ready: false,
     },
     notes_template:
       "Session:\nSetup:\nReason for entry:\nRisk plan:\nTrade management:\nLesson:",
@@ -115,11 +118,14 @@ const settingsTemplates = {
     pairs: ["BTC", "ETH"],
     strategies: ["Breakout", "Trend Continuation", "Swing"],
     trade_types: ["Scalp", "Day Trade", "Swing"],
-    emotions: ["Calm", "Patient", "FOMO"],
+    emotions: ["Calm", "Patient", "FOMO", "Focused", "Greedy", "Hesitant"],
     checklist: {
       risk_checked: false,
       market_condition_checked: false,
       invalidation_clear: false,
+      volatility_checked: false,
+      liquidity_zone_marked: false,
+      trade_management_plan_ready: false,
     },
     notes_template:
       "Market condition:\nSetup:\nReason for entry:\nRisk plan:\nTrade management:\nLesson:",
@@ -131,11 +137,14 @@ const settingsTemplates = {
     pairs: ["AAPL", "TSLA", "NVDA", "MSFT"],
     strategies: ["Breakout", "Reversal", "Swing"],
     trade_types: ["Day Trade", "Swing", "Position"],
-    emotions: ["Calm", "Confident", "Hesitant"],
+    emotions: ["Calm", "Confident", "Hesitant", "Focused", "Impatient", "Anxious"],
     checklist: {
       ticker_reviewed: false,
       risk_checked: false,
       market_context_checked: false,
+      earnings_checked: false,
+      sector_bias_confirmed: false,
+      trade_management_plan_ready: false,
     },
     notes_template:
       "Ticker:\nSector:\nSetup:\nReason for entry:\nRisk plan:\nTrade management:\nLesson:",
@@ -335,18 +344,18 @@ const randomItem = <T,>(items: T[]) =>
 const buildSampleTrades = (
   userId: string,
   plan: PlanKey,
-  count: number,
   settings: UserTradeSettings,
+  count: number,
   cycleStart?: string,
   cycleEnd?: string,
 ) => {
-  const checklist = limitChecklistForPlan(settings.checklist || defaultSettings.checklist, plan);
+  const checklist = limitChecklistForPlan(settings.checklist, plan);
   const canUsePsychology = PLANS[plan].psychologyTracking;
-  const availableEnvironments = settings.environments.length ? settings.environments : ["Live"];
-  const availablePairs = settings.pairs.length ? settings.pairs : sampleTradeTemplates.map((trade) => trade.pair);
-  const availableStrategies = settings.strategies.length ? settings.strategies : sampleTradeTemplates.map((trade) => trade.strategy);
-  const availableTradeTypes = settings.trade_types.length ? settings.trade_types : sampleTradeTemplates.map((trade) => trade.trade_type);
-  const availableEmotions = settings.emotions.length ? settings.emotions : defaultSettings.emotions;
+  const environments = settings.environments.length ? settings.environments : defaultSettings.environments;
+  const pairs = settings.pairs.length ? settings.pairs : defaultSettings.pairs;
+  const strategies = settings.strategies.length ? settings.strategies : defaultSettings.strategies;
+  const tradeTypes = settings.trade_types.length ? settings.trade_types : defaultSettings.trade_types;
+  const emotions = settings.emotions.length ? settings.emotions : defaultSettings.emotions;
   const now = Date.now();
   const startTime = cycleStart
     ? new Date(cycleStart).getTime()
@@ -372,6 +381,10 @@ const buildSampleTrades = (
     }
 
     const template = randomItem(sampleTradeTemplates);
+    const pair = randomItem(pairs);
+    const strategy = randomItem(strategies);
+    const tradeType = randomItem(tradeTypes);
+    const environment = randomItem(environments);
     const date = new Date(timestamps[index] || safeEndTime);
     const entryHour = 7 + Math.floor(Math.random() * 9);
     const entryMinute = String(["05", "15", "30", "45"][index % 4]);
@@ -397,10 +410,10 @@ const buildSampleTrades = (
       user_id: userId,
       trade_date: date.toISOString().slice(0, 10),
       entry_time: `${String(entryHour).padStart(2, "0")}:${entryMinute}`,
-      environment: randomItem(availableEnvironments),
-      pair: randomItem(availablePairs) || template.pair,
-      strategy: randomItem(availableStrategies) || template.strategy,
-      trade_type: randomItem(availableTradeTypes) || template.trade_type,
+      environment,
+      pair,
+      strategy,
+      trade_type: tradeType,
       direction: template.direction,
       entry_price: entryPrice,
       position_size: Number((template.position_size * positionMultiplier).toFixed(2)),
@@ -410,7 +423,7 @@ const buildSampleTrades = (
       pnl,
       result,
       checklist,
-      emotions: canUsePsychology && availableEmotions.length ? [randomItem(availableEmotions)] : [],
+      emotions: canUsePsychology ? [randomItem(emotions)] : [],
       notes: template.notes,
       created_at: date.toISOString(),
     };
@@ -774,8 +787,8 @@ function SettingsPageContent() {
     const sampleTrades = buildSampleTrades(
       user.id,
       currentPlan,
-      seedCount,
       settings,
+      seedCount,
       usage.cycleStart,
       usage.cycleEnd,
     );
@@ -788,6 +801,7 @@ function SettingsPageContent() {
     }
 
     await refreshUsagePreview(currentPlan);
+    router.refresh();
     alert(
       isFree
         ? `FREE current cycle filled to 30/30. Try saving another trade in Trade Log to confirm the limit blocks.`
@@ -816,6 +830,7 @@ function SettingsPageContent() {
     }
 
     await refreshUsagePreview(currentPlan);
+    router.refresh();
     alert("Trade database reset.");
   };
 
@@ -955,7 +970,7 @@ function SettingsPageContent() {
                 <div>
                   <h2 className="text-xl font-bold tracking-tight">Templates</h2>
                   <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                    Change your setup template without adding extra settings sections.
+                    Change your setup, checklist, and psychology tags from one clean template.
                   </p>
                 </div>
                 <span className="rounded-full border border-[var(--border)] bg-[#efeee9] px-3 py-1 text-xs font-bold text-[var(--text-secondary)]">
@@ -986,7 +1001,7 @@ function SettingsPageContent() {
             {PLANS[currentPlan].psychologyTracking ? (
               <SettingsList
                 title="Psychology Tags"
-                description="Control the psychology tags available in Trade Log."
+                description="Control the Phase 3 psychology tags available during trade review."
                 items={settings.emotions}
                 value={newEmotion}
                 placeholder="Add psychology tag..."

@@ -468,7 +468,8 @@ function TradeReviewPageContent() {
         (trade) =>
           trade.pair?.toLowerCase().includes(q) ||
           trade.strategy?.toLowerCase().includes(q) ||
-          trade.result?.toLowerCase().includes(q),
+          trade.result?.toLowerCase().includes(q) ||
+          trade.environment?.toLowerCase().includes(q),
       );
     }
 

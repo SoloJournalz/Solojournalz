@@ -174,12 +174,7 @@ export async function updateUserPlan(
     plan,
     trade_limit_monthly: getDatabaseMonthlyLimit(planLimits.monthlyTrades),
     screenshot_limit_monthly: getDatabaseMonthlyLimit(planLimits.monthlyScreenshots),
-    stripe_customer_id: null,
-    stripe_subscription_id: null,
-    stripe_price_id: null,
-    subscription_status: plan === "EXPERT" ? "dev_active" : "free",
-    current_period_start: null,
-    current_period_end: null,
+    subscription_status: plan === "EXPERT" ? "developer" : "free",
     cancel_at_period_end: false,
     updated_at: new Date().toISOString(),
   };

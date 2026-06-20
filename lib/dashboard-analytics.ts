@@ -54,6 +54,7 @@ export type DashboardAnalytics = {
   profitFactor: number | null;
   averageRisk: number;
   averageRR: number | null;
+  averageRMultiple: number | null;
   bestTrade: number;
   worstTrade: number;
   equityData: EquityPoint[];
@@ -77,19 +78,6 @@ function hasMeaningfulValue(value: unknown): boolean {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "string") return value.trim().length > 0;
   return Boolean(value);
-}
-
-function normalizeEnvironmentLabel(value?: string | null): string | null {
-  const clean = String(value || "").trim();
-  if (!clean) return null;
-
-  const lowered = clean.toLowerCase();
-
-  if (["unknown", "n/a", "na", "untagged", "undefined", "null"].includes(lowered)) {
-    return null;
-  }
-
-  return clean;
 }
 
 function sortTrades(trades: DashboardTrade[]) {
@@ -121,6 +109,30 @@ function calculateAverageRR(trades: DashboardTrade[]): number | null {
   if (rrValues.length === 0) return null;
 
   return rrValues.reduce((sum, value) => sum + value, 0) / rrValues.length;
+}
+
+
+function calculateAverageRMultiple(trades: DashboardTrade[]): number | null {
+  const rValues = trades
+    .map((trade) => {
+      const entry = toNumber(trade.entry_price);
+      const stop = toNumber(trade.stop_loss);
+      const pnl = toNumber(trade.pnl);
+      const positionSize = Math.abs(toNumber(trade.position_size));
+      const riskDistance = Math.abs(entry - stop);
+      const riskAmount = riskDistance * (positionSize || 1);
+
+      if (!entry || !stop || riskDistance <= 0 || riskAmount <= 0) {
+        return null;
+      }
+
+      return pnl / riskAmount;
+    })
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+  if (rValues.length === 0) return null;
+
+  return rValues.reduce((sum, value) => sum + value, 0) / rValues.length;
 }
 
 function calculateGroupPerformance(
@@ -217,9 +229,12 @@ export function getDashboardAnalytics(rawTrades: DashboardTrade[]): DashboardAna
 
   const environmentBreakdown = Object.values(
     trades.reduce<Record<string, EnvironmentBreakdown>>((acc, trade) => {
-      const environment = normalizeEnvironmentLabel(trade.environment);
+      const environment = String(trade.environment || "").trim();
+      const normalizedEnvironment = environment.toLowerCase();
 
-      if (!environment) return acc;
+      if (!environment || normalizedEnvironment === "unknown" || normalizedEnvironment === "n/a") {
+        return acc;
+      }
 
       if (!acc[environment]) {
         acc[environment] = {
@@ -234,7 +249,7 @@ export function getDashboardAnalytics(rawTrades: DashboardTrade[]): DashboardAna
 
       return acc;
     }, {}),
-  ).sort((a, b) => b.trades - a.trades);
+  ).sort((a, b) => b.pnl - a.pnl);
 
   const psychologyEntries = trades.filter((trade) => hasMeaningfulValue(trade.emotions)).length;
 
@@ -262,6 +277,7 @@ export function getDashboardAnalytics(rawTrades: DashboardTrade[]): DashboardAna
     profitFactor,
     averageRisk,
     averageRR: calculateAverageRR(trades),
+    averageRMultiple: calculateAverageRMultiple(trades),
     bestTrade,
     worstTrade,
     equityData,

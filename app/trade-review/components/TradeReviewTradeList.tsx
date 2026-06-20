@@ -1,6 +1,6 @@
 type Trade = {
   id: string;
-  environment: "LIVE" | "TESTING" | "BACKTESTING" | "CHALLENGE" | null;
+  environment: string | null;
   trade_date: string;
   entry_time: string | null;
   pair: string;
@@ -18,7 +18,7 @@ type TradeReviewTradeListProps = {
   search: string;
   filter: string;
   environmentFilter: string;
-  environments: string[];
+  environments?: string[];
   onSearchChange: (value: string) => void;
   onFilterChange: (value: string) => void;
   onEnvironmentFilterChange: (value: string) => void;
@@ -75,7 +75,7 @@ export default function TradeReviewTradeList({
   search,
   filter,
   environmentFilter,
-  environments,
+  environments = [],
   onSearchChange,
   onFilterChange,
   onEnvironmentFilterChange,

@@ -141,11 +141,11 @@ export function getPerformanceInsights(analytics: DashboardAnalytics): Dashboard
         : "Name your setups to reveal which strategies are working best.",
     },
     {
-      title: "Environment Edge",
+      title: "Best Environment",
       value: bestEnvironment ? bestEnvironment.environment : "--",
       tone: bestEnvironment && bestEnvironment.pnl >= 0 ? "positive" : "default",
       description: bestEnvironment
-        ? `${bestEnvironment.trades} trades · ${formatMoney(bestEnvironment.pnl)}. Compare this against live execution quality.`
+        ? `${bestEnvironment.trades} trades · ${formatMoney(bestEnvironment.pnl)} journaled PnL.`
         : "Use environment tags to separate practice from real execution.",
     },
   ];
@@ -155,7 +155,7 @@ export function getConsistencyInsights(analytics: DashboardAnalytics): Dashboard
   const totalTrades = Number(analytics.totalTrades || 0);
   const averageRisk = Number(analytics.averageRisk || 0);
   const consistencyScore = Number(analytics.consistencyScore || 0);
-  const bestWinStreak = Number(analytics.bestWinStreak || 0);
+  const averageRMultiple = analytics.averageRMultiple;
 
   return [
     {
@@ -179,13 +179,13 @@ export function getConsistencyInsights(analytics: DashboardAnalytics): Dashboard
             : "Add risk percentage to trades to measure discipline properly.",
     },
     {
-      title: "Best Win Streak",
-      value: String(bestWinStreak),
-      tone: bestWinStreak >= 3 ? "positive" : "default",
+      title: "Average R",
+      value: averageRMultiple === null ? "--" : `${averageRMultiple >= 0 ? "+" : ""}${averageRMultiple.toFixed(2)}R`,
+      tone: averageRMultiple !== null && averageRMultiple > 0 ? "positive" : averageRMultiple !== null && averageRMultiple < 0 ? "negative" : "default",
       description:
-        bestWinStreak > 0
-          ? "Momentum is useful, but only when the same process is repeated."
-          : "Streak tracking appears as your trade history grows.",
+        averageRMultiple !== null
+          ? "Shows how much your average outcome returns compared with the risk taken."
+          : "Average R appears once trades include entry, stop, size, and P/L.",
     },
     {
       title: "Journal Sample",

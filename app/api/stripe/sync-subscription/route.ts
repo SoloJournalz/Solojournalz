@@ -110,13 +110,8 @@ export async function POST() {
     return NextResponse.json({ error: planError.message }, { status: 500 });
   }
 
-  if (
-    currentPlan?.subscription_status === "dev_active" &&
-    currentPlan?.plan === "EXPERT" &&
-    !currentPlan?.stripe_subscription_id &&
-    !currentPlan?.stripe_customer_id
-  ) {
-    return NextResponse.json({ ok: true, synced: false, devOverride: true });
+  if (currentPlan?.subscription_status === "developer") {
+    return NextResponse.json({ ok: true, synced: false, skipped: "developer_plan" });
   }
 
   const subscription = await findLatestStripeSubscription({

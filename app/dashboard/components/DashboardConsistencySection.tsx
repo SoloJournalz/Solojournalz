@@ -8,6 +8,10 @@ function formatMoney(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
 }
 
+function formatRatio(value: number | null | undefined) {
+  return value === null || value === undefined ? "--" : value.toFixed(2);
+}
+
 type DashboardConsistencySectionProps = {
   analytics: DashboardAnalytics;
 };
@@ -34,9 +38,9 @@ export default function DashboardConsistencySection({ analytics }: DashboardCons
           helper="Momentum is useful when discipline stays stable."
         />
         <DashboardStatCard
-          label="Consistency"
-          value={`${analytics.consistencyScore}%`}
-          helper="A simple read on repeatability."
+          label="Average R:R"
+          value={formatRatio(analytics.averageRR)}
+          helper="Average planned reward compared with risk."
         />
       </div>
 
