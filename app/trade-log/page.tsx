@@ -321,8 +321,8 @@ function TradeLogPageContent() {
     <main className="min-h-screen overflow-y-auto bg-[var(--background)] text-[var(--text-primary)]">
       <Navbar hasUnsavedChanges={hasUnsavedChanges} />
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-5 lg:px-6">
-        <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+      <section className="mx-auto max-w-7xl px-5 py-10">
+        <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-sm font-medium text-[var(--gold)]">Trade Log</p>
 
@@ -338,7 +338,6 @@ function TradeLogPageContent() {
           </span>
         </div>
 
-        <div className="space-y-4">
         <TradeDetailsForm
           form={form}
           settings={settings}
@@ -349,10 +348,15 @@ function TradeLogPageContent() {
           updateNumber={updateNumber}
         />
 
-        <div className="grid gap-4">
+        <div className="mx-auto mt-3 grid max-w-5xl gap-3">
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold tracking-tight">Pre-trade checklist</h2>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+                  Phase 1 checklist
+                </p>
+                <h2 className="mt-1 text-lg font-bold tracking-tight">Pre-trade checklist</h2>
+              </div>
               <span className="rounded-full bg-[#efeee9] px-3 py-1 text-xs font-black text-[var(--text-secondary)]">
                 {Object.values(form.checklist).filter(Boolean).length}/{Object.keys(form.checklist).length}
               </span>
@@ -449,7 +453,6 @@ function TradeLogPageContent() {
             onSave={handleSaveTrade}
           />
         )}
-        </div>
       </section>
     </main>
   );

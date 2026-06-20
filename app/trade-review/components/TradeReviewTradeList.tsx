@@ -55,8 +55,8 @@ export default function TradeReviewTradeList({
   onDeleteTrade,
 }: TradeReviewTradeListProps) {
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] sm:p-5 md:flex md:h-full md:min-h-0 md:flex-col">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Select a trade</h2>
         </div>
@@ -104,7 +104,7 @@ export default function TradeReviewTradeList({
         />
       </div>
 
-      <div className="mt-3 max-h-[268px] min-h-[268px] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-2">
+      <div className="mt-3 max-h-[250px] min-h-[250px] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[#efeee9] p-2">
         {loading ? (
           <div className="flex h-full min-h-[150px] items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
             Loading trades
